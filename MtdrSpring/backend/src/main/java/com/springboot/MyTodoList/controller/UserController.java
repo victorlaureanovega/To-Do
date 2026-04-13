@@ -1,75 +1,74 @@
 package com.springboot.MyTodoList.controller;
 import com.springboot.MyTodoList.model.User;
-import com.springboot.MyTodoList.service.UserService;
+import com.springboot.MyTodoList.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/users")
 public class UserController {
+
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
-    //@CrossOrigin
-    @GetMapping(value = "/users")
-    public List<User> getAllUsers(){
-        return userService.findAll();
+    // Obtener todos los usuarios
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 
-    //@CrossOrigin
-    @GetMapping(value = "/users/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable int id){
-        try{
-            ResponseEntity<User> responseEntity = userService.getUserById(id);
-            return new ResponseEntity<User>(responseEntity.getBody(), HttpStatus.OK);
-        }catch (Exception e){
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
-    //@CrossOrigin
-    @PostMapping(value = "/adduser")
-    public ResponseEntity<User> addUser(@RequestBody User newUser) throws Exception{
-        User dbUser = userService.addUser(newUser);
-        HttpHeaders responseHeaders = new HttpHeaders();
-        responseHeaders.set("location",""+dbUser.getID());
-        responseHeaders.set("Access-Control-Expose-Headers","location");
-        //URI location = URI.create(""+td.getID())
-
-        return ResponseEntity.ok()
-                .headers(responseHeaders).build();
-    }
-    //@CrossOrigin
-    @PutMapping(value = "updateUser/{id}")
-    public ResponseEntity<User> updateUser(@RequestBody User user, @PathVariable int id){
-        try{
-            User dbUser = userService.updateUser(id, user);
-            
-            return new ResponseEntity<>(dbUser,HttpStatus.OK);
-        }catch (Exception e){
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-        }
-    }
-    //@CrossOrigin
-    @DeleteMapping(value = "deleteUser/{id}")
-    public ResponseEntity<Boolean> deleteUser(@PathVariable("id") int id){
-        Boolean flag = false;
-        try{
-            flag = userService.deleteUser(id);
-            return new ResponseEntity<>(flag, HttpStatus.OK);
-        }catch (Exception e){
-            return new ResponseEntity<>(flag,HttpStatus.NOT_FOUND);
-        }
+    // Obtener un usuario por su ID de base de datos (Long)
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
-
-    @GetMapping(value = "/unitTestAdd")
-    public User test(){
-        return userService.test();
+    // Obtener un usuario por su ID de Telegram
+    @GetMapping("/telegram/{telegramId}")
+    public ResponseEntity<User> getUserByTelegramId(@PathVariable Long telegramId) {
+        return userRepository.findByTelegramId(telegramId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
+    // Crear un nuevo usuario
+    @PostMapping
+    public User createUser(@RequestBody User user) {
+        return userRepository.save(user);
+    }
 
+    // Actualizar un usuario existente
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        return userRepository.findById(id)
+                .map(user -> {
+                    user.setUsername(userDetails.getUsername());
+                    user.setFirstName(userDetails.getFirstName());
+                    user.setLastName(userDetails.getLastName());
+                    user.setRole(userDetails.getRole());
+                    user.setTelegramId(userDetails.getTelegramId());
+                    // No olvidamos actualizar el equipo si viene en el JSON
+                    if (userDetails.getTeam() != null) {
+                        user.setTeam(userDetails.getTeam());
+                    }
+                    User updatedUser = userRepository.save(user);
+                    return ResponseEntity.ok(updatedUser);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Eliminar un usuario
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .map(user -> {
+                    userRepository.delete(user);
+                    return ResponseEntity.ok().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }

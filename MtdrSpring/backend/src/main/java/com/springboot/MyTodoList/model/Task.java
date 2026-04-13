@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "taskId")
     private Long taskId;
 
     @ManyToOne
@@ -30,10 +31,19 @@ public class Task {
     @Column(name = "creationDate", updatable = false)
     private LocalDateTime creationDate = LocalDateTime.now();
 
+    @Column(name = "estimatedDuration")
     private Float estimatedDuration;
+
+    @Column(name = "finishDate")
     private java.sql.Date finishDate;
+
+    @Column(name = "realDuration")
     private Float realDuration;
+
+    @Column(name = "totalHoursWorked")
     private Double totalHoursWorked = 0.0;
+
+    @Column(name = "isActive")
     private Integer isActive = 1;
 
     public Task() {}

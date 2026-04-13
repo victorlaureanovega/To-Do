@@ -6,13 +6,18 @@ import jakarta.persistence.*;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "userId")
     private Long userId;
 
     @Column(name = "telegramId", unique = true, nullable = false)
     private Long telegramId;
 
     private String username;
+
+    @Column(name = "firstName")
     private String firstName;
+
+    @Column(name = "lastName")
     private String lastName;
     private String role; // 'DEVELOPER' o 'MANAGER'
     private String password;
