@@ -1,5 +1,6 @@
 package com.springboot.MyTodoList.config;
 import com.springboot.MyTodoList.model.Task;
+import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import oracle.jdbc.pool.OracleDataSource;
 import org.slf4j.Logger;
@@ -47,8 +48,21 @@ public class OracleConfiguration {
                     System.out.println("Conexión OK, pero la tabla está vacía. Verificar INSERTS.");
                 } else {
                     System.out.println("LECTURA EXITOSA. Tareas encontradas:");
-                    for (Task t : tasks) {
-                        System.out.println("   -> [" + t.getTaskId() + "] " + t.getContent() + " (Estado: " + t.getTaskStatus() + ")" + ", Asignada a: " + t.getUser().getUsername());
+                    // --- PRUEBA ESPECÍFICA DE FILTRADO POR USUARIO ---
+                    System.out.println("\nBuscando por filtro...");
+                    
+                    // Tomamos el primer usuario que aparezca en las tareas para probar
+                    User usuarioDePrueba = tasks.get(1).getUser(); 
+                    Long idParaProbar = usuarioDePrueba.getUserId();
+                    
+                    System.out.println("Buscando tareas para el usuario ID: " + idParaProbar + " (" + usuarioDePrueba.getUsername() + ")");
+                    
+                    // Aquí es donde probamos el método del repositorio
+                    List<Task> tareasFiltradas = taskRepository.findByUser(usuarioDePrueba);
+                    
+                    System.out.println("Se encontraron " + tareasFiltradas.size() + " tareas para este usuario.");
+                    for (Task tf : tareasFiltradas) {
+                        System.out.println("   -> Tarea: " + tf.getContent());
                     }
                 }
                 
