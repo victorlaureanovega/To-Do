@@ -2,6 +2,7 @@ package com.springboot.MyTodoList.controller;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
+import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -47,12 +48,9 @@ public class TaskController {
         return average;
     }
 
-    // Obtener el total de horas trabajadas por un desarrollador
+    // Get total estimated and worked hours by a developer
     @GetMapping("/hours/by-developer/{developerId}")
-    public Double getHoursByDeveloper(@PathVariable Long developerId) {
-        Double totalHours = taskRepository.getTotalHoursWorkedByDeveloper(developerId);
-        
-        // Si el total es null (el usuario no tiene tareas o no existen horas registradas), se envía 0.0
-        return (totalHours != null) ? totalHours : 0.0;
+    public DeveloperHours getHoursByDeveloper(@PathVariable Long developerId) {
+        return taskRepository.getDeveloperHours(developerId);
     }
 }

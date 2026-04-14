@@ -1,6 +1,7 @@
 package com.springboot.MyTodoList.repository;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.User;
+import com.springboot.MyTodoList.dto.DeveloperHours;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -41,7 +42,9 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "FROM Team tm WHERE tm.teamId = :teamId")
     Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
 
-    // Obtener el total de horas trabajadas por un desarrollador específico
-    @Query("SELECT SUM(t.totalHoursWorked) FROM Task t WHERE t.user.userId = :developerId")
-    Double getTotalHoursWorkedByDeveloper(@Param("developerId") Long developerId);
+   // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
+    @Query("SELECT COALESCE(SUM(t.estimatedDuration), 0.0) AS totalEstimatedHours, " +
+           "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
+           "FROM Task t WHERE t.user.userId = :developerId")
+    DeveloperHours getDeveloperHours(@Param("developerId") Long developerId);
 }
