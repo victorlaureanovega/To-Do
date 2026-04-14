@@ -2,6 +2,7 @@ package com.springboot.MyTodoList.controller;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
+import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -45,5 +46,11 @@ public class TaskController {
         Float average = taskRepository.getAverageFinishedTasksByTeam(teamId);
 
         return average;
+    }
+
+    // Get total estimated and worked hours by a developer
+    @GetMapping("/hours/by-developer/{developerId}")
+    public DeveloperHours getHoursByDeveloper(@PathVariable Long developerId) {
+        return taskRepository.getDeveloperHours(developerId);
     }
 }
