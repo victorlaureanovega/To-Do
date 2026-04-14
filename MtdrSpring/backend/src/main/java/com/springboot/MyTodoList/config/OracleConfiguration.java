@@ -71,9 +71,11 @@ public class OracleConfiguration {
                         if (usuario != null && usuario.getTeam() != null) {
                             Team equipo = usuario.getTeam();
                             Float promedio = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
+                            Float promedioTareas = taskRepository.getAverageFinishedTasksByTeam(equipo.getTeamId());
                             
                             System.out.println("Equipo: " + equipo.getName());
                             System.out.println("Promedio: " + (promedio != null ? promedio : 0.0f));
+                            System.out.println("Promedio de tareas finalizadas del equipo: " + (promedioTareas != null ? promedioTareas : 0.0f));
                         }
                     }
                     

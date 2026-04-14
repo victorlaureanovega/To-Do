@@ -33,10 +33,17 @@ public class TaskController {
     // Obtener el promedio de horas trabajadas por cada equipo
     @GetMapping("/hours/average-by-team/{teamId}")
     public Float averageWorkedHoursByTeam(@PathVariable Long teamId) {
-        // Llamamos directamente al query que definiste en el repositorio
         Float average = taskRepository.getAverageWorkedHoursByTeam(teamId);
         
         // Si el promedio es null, se envía cero
         return (average != null) ? average : 0.0f;
+    }
+
+    // Obtener el promedio de tareas finalizadas por cada miembro del equipo
+    @GetMapping("/average-by-team/{teamId}")
+    public Float averageFinishedTasksByTeam(@PathVariable Long teamId) {
+        Float average = taskRepository.getAverageFinishedTasksByTeam(teamId);
+
+        return average;
     }
 }

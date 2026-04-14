@@ -21,10 +21,23 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     // Buscar tareas activas de un usuario
     List<Task> findByUserAndIsActive(User user, Integer isActive);
 
-    // Promedio de horas trabajadas por cada miembro de un equipo (sólo está considerando a los usuarios que tienen tareas registradas con su id en Task)
-    @Query("SELECT SUM(t.totalHoursWorked) / COUNT(DISTINCT u.userId) " +
+    // Promedio de horas trabajadas por cada miembro de un equipo
+    // Query para considerar sólo a los que tienen tareas registradas
+    /*@Query("SELECT SUM(t.totalHoursWorked) / COUNT(DISTINCT u.userId) " +
        "FROM Task t " +
        "JOIN t.user u " +
-       "WHERE u.team.teamId = :teamId")
+       "WHERE u.team.teamId = :teamId")*/
+       
+    // Query para considerar a todos los miembros del equipo
+    @Query("SELECT " +
+       "(SELECT SUM(t.totalHoursWorked) FROM Task t WHERE t.user.team.teamId = :teamId) / " +
+       "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
+       "FROM Team team WHERE team.teamId = :teamId")
     Float getAverageWorkedHoursByTeam(@Param("teamId") Long teamId);
+
+    // Promedio de actividades finalizadas por cada miembro de un equipo
+    @Query("SELECT (SELECT CAST(COUNT(t) AS float) FROM Task t WHERE t.user.team.teamId = :teamId AND t.taskStatus = 'Finalizada') / " +
+       "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
+       "FROM Team tm WHERE tm.teamId = :teamId")
+    Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
 }
