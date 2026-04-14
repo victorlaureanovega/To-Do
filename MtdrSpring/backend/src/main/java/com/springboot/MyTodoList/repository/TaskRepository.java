@@ -40,4 +40,8 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
        "FROM Team tm WHERE tm.teamId = :teamId")
     Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
+
+    // Obtener el total de horas trabajadas por un desarrollador específico
+    @Query("SELECT SUM(t.totalHoursWorked) FROM Task t WHERE t.user.userId = :developerId")
+    Double getTotalHoursWorkedByDeveloper(@Param("developerId") Long developerId);
 }
