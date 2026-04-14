@@ -1,5 +1,6 @@
 package com.springboot.MyTodoList.config;
 import com.springboot.MyTodoList.model.Task;
+import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import oracle.jdbc.pool.OracleDataSource;
@@ -59,6 +60,22 @@ public class OracleConfiguration {
                     
                     // Aquí es donde probamos el método del repositorio
                     List<Task> tareasFiltradas = taskRepository.findByUser(usuarioDePrueba);
+
+                    List<Task> tareas = taskRepository.findAll();
+
+                    if (!tareas.isEmpty()) {
+                        // Usa el índice 0 para ir a lo seguro
+                        Task primeraTarea = tasks.get(0); 
+                        User usuario = primeraTarea.getUser();
+                        
+                        if (usuario != null && usuario.getTeam() != null) {
+                            Team equipo = usuario.getTeam();
+                            Float promedio = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
+                            
+                            System.out.println("Equipo: " + equipo.getName());
+                            System.out.println("Promedio: " + (promedio != null ? promedio : 0.0f));
+                        }
+                    }
                     
                     System.out.println("Se encontraron " + tareasFiltradas.size() + " tareas para este usuario.");
                     for (Task tf : tareasFiltradas) {
