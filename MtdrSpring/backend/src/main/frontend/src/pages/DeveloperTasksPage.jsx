@@ -12,7 +12,12 @@ import { STATUS_OPTIONS } from '../data'
 
 
 export default function DeveloperTasksPage() {
-  const { developerTasks, tasksLoading, tasksError, fetchDeveloperTasksFromBackend } = useData()
+  const {
+    developerTasks,
+    tasksLoading,
+    tasksError,
+    fetchDeveloperTasksFromBackend,
+  } = useData()
   const [statusFilter, setStatusFilter] = useState('All')
   const [developerId, setDeveloperId] = useState('1')
 

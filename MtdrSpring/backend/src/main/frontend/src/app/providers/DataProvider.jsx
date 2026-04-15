@@ -35,6 +35,15 @@ export function DataProvider({ children }) {
 	const [developerTasks, setDeveloperTasks] = useState([])
 	const [tasksLoading, setTasksLoading] = useState(false)
 	const [tasksError, setTasksError] = useState(null)
+	const [developerHours, setDeveloperHours] = useState(null)
+	const [developerHoursLoading, setDeveloperHoursLoading] = useState(false)
+	const [developerHoursError, setDeveloperHoursError] = useState(null)
+	const [teamAverageFinishedTasks, setTeamAverageFinishedTasks] = useState(null)
+	const [teamAverageFinishedTasksLoading, setTeamAverageFinishedTasksLoading] = useState(false)
+	const [teamAverageFinishedTasksError, setTeamAverageFinishedTasksError] = useState(null)
+	const [teamAverageWorkedHours, setTeamAverageWorkedHours] = useState(null)
+	const [teamAverageWorkedHoursLoading, setTeamAverageWorkedHoursLoading] = useState(false)
+	const [teamAverageWorkedHoursError, setTeamAverageWorkedHoursError] = useState(null)
 
 	// Team tasks state (read-only)
 	const [teamTasks, setTeamTasks] = useState([])
@@ -120,6 +129,212 @@ export function DataProvider({ children }) {
 			return { success: false, data: null, error: normalizedError }
 		} finally {
 			setTasksLoading(false)
+		}
+	}, [])
+
+	// KPI backend call: computes average worked hours per task for a developer.
+	const fetchDeveloperAverageHoursFromBackend = useCallback(async (developerId) => {
+		if (!developerId) {
+			const error = {
+				message: 'Developer ID is required',
+				code: 'VALIDATION_ERROR',
+			}
+
+			setDeveloperHoursError(error)
+			return { success: false, data: null, error }
+		}
+
+		setDeveloperHoursLoading(true)
+		setDeveloperHoursError(null)
+
+		try {
+			const hoursEndpoint = apiBaseUrl
+				? `${apiBaseUrl}/api/tasks/hours/by-developer/${developerId}`
+				: `/api/tasks/hours/by-developer/${developerId}`
+
+			const tasksEndpoint = apiBaseUrl
+				? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
+				: `/api/tasks/by-developer/${developerId}`
+
+			const [hoursResponse, tasksResponse] = await Promise.all([
+				fetch(hoursEndpoint, {
+					method: 'GET',
+					headers: { Accept: 'application/json' },
+				}),
+				fetch(tasksEndpoint, {
+					method: 'GET',
+					headers: { Accept: 'application/json' },
+				}),
+			])
+
+			if (!hoursResponse.ok || !tasksResponse.ok) {
+				const status = !hoursResponse.ok
+					? `${hoursResponse.status} ${hoursResponse.statusText}`
+					: `${tasksResponse.status} ${tasksResponse.statusText}`
+
+				const error = {
+					message: `Backend responded ${status}`,
+					code: 'BACKEND_HTTP_ERROR',
+				}
+
+				setDeveloperHoursError(error)
+				return { success: false, data: null, error }
+			}
+
+			const hoursData = await hoursResponse.json()
+			const tasksData = await tasksResponse.json()
+
+			const totalWorkedHours = Number(hoursData?.totalWorkedHours ?? 0)
+			const totalEstimatedHours = Number(hoursData?.totalEstimatedHours ?? 0)
+			const taskCount = Array.isArray(tasksData) ? tasksData.length : 0
+			const averageWorkedHours = taskCount > 0 ? totalWorkedHours / taskCount : 0
+
+			const payload = {
+				developerId: String(developerId),
+				averageWorkedHours,
+				totalWorkedHours,
+				totalEstimatedHours,
+				taskCount,
+			}
+
+			setDeveloperHours(payload)
+			setDeveloperHoursError(null)
+
+			return { success: true, data: payload }
+		} catch (error) {
+			const normalizedError = {
+				message: error instanceof Error ? error.message : 'Failed to load developer hours',
+				code: 'BACKEND_CALL_FAILED',
+			}
+
+			setDeveloperHoursError(normalizedError)
+			return { success: false, data: null, error: normalizedError }
+		} finally {
+			setDeveloperHoursLoading(false)
+		}
+	}, [])
+
+	// KPI backend call: average finished tasks per member for a team.
+	const fetchTeamAverageFinishedTasksFromBackend = useCallback(async (teamId) => {
+		if (!teamId) {
+			const error = {
+				message: 'Team ID is required',
+				code: 'VALIDATION_ERROR',
+			}
+
+			setTeamAverageFinishedTasksError(error)
+			return { success: false, data: null, error }
+		}
+
+		setTeamAverageFinishedTasksLoading(true)
+		setTeamAverageFinishedTasksError(null)
+
+		try {
+			const endpoint = apiBaseUrl
+				? `${apiBaseUrl}/api/tasks/average-by-team/${teamId}`
+				: `/api/tasks/average-by-team/${teamId}`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+				headers: {
+					Accept: 'application/json',
+				},
+			})
+
+			if (!response.ok) {
+				const error = {
+					message: `Backend responded ${response.status} ${response.statusText}`,
+					code: 'BACKEND_HTTP_ERROR',
+				}
+
+				setTeamAverageFinishedTasksError(error)
+				return { success: false, data: null, error }
+			}
+
+			const rawAverage = await response.json()
+			const averageFinishedTasks = Number(rawAverage ?? 0)
+
+			const payload = {
+				teamId: String(teamId),
+				averageFinishedTasks,
+			}
+
+			setTeamAverageFinishedTasks(payload)
+			setTeamAverageFinishedTasksError(null)
+
+			return { success: true, data: payload }
+		} catch (error) {
+			const normalizedError = {
+				message: error instanceof Error ? error.message : 'Failed to load team average finished tasks',
+				code: 'BACKEND_CALL_FAILED',
+			}
+
+			setTeamAverageFinishedTasksError(normalizedError)
+			return { success: false, data: null, error: normalizedError }
+		} finally {
+			setTeamAverageFinishedTasksLoading(false)
+		}
+	}, [])
+
+	// KPI backend call: average worked hours per member for a team.
+	const fetchTeamAverageWorkedHoursFromBackend = useCallback(async (teamId) => {
+		if (!teamId) {
+			const error = {
+				message: 'Team ID is required',
+				code: 'VALIDATION_ERROR',
+			}
+
+			setTeamAverageWorkedHoursError(error)
+			return { success: false, data: null, error }
+		}
+
+		setTeamAverageWorkedHoursLoading(true)
+		setTeamAverageWorkedHoursError(null)
+
+		try {
+			const endpoint = apiBaseUrl
+				? `${apiBaseUrl}/api/tasks/hours/average-by-team/${teamId}`
+				: `/api/tasks/hours/average-by-team/${teamId}`
+
+			const response = await fetch(endpoint, {
+				method: 'GET',
+				headers: {
+					Accept: 'application/json',
+				},
+			})
+
+			if (!response.ok) {
+				const error = {
+					message: `Backend responded ${response.status} ${response.statusText}`,
+					code: 'BACKEND_HTTP_ERROR',
+				}
+
+				setTeamAverageWorkedHoursError(error)
+				return { success: false, data: null, error }
+			}
+
+			const rawAverage = await response.json()
+			const averageWorkedHours = Number(rawAverage ?? 0)
+
+			const payload = {
+				teamId: String(teamId),
+				averageWorkedHours,
+			}
+
+			setTeamAverageWorkedHours(payload)
+			setTeamAverageWorkedHoursError(null)
+
+			return { success: true, data: payload }
+		} catch (error) {
+			const normalizedError = {
+				message: error instanceof Error ? error.message : 'Failed to load team average worked hours',
+				code: 'BACKEND_CALL_FAILED',
+			}
+
+			setTeamAverageWorkedHoursError(normalizedError)
+			return { success: false, data: null, error: normalizedError }
+		} finally {
+			setTeamAverageWorkedHoursLoading(false)
 		}
 	}, [])
 
@@ -221,6 +436,18 @@ export function DataProvider({ children }) {
 		tasksError,
 		fetchDeveloperTasks,
 		fetchDeveloperTasksFromBackend,
+		developerHours,
+		developerHoursLoading,
+		developerHoursError,
+		fetchDeveloperAverageHoursFromBackend,
+		teamAverageFinishedTasks,
+		teamAverageFinishedTasksLoading,
+		teamAverageFinishedTasksError,
+		fetchTeamAverageFinishedTasksFromBackend,
+		teamAverageWorkedHours,
+		teamAverageWorkedHoursLoading,
+		teamAverageWorkedHoursError,
+		fetchTeamAverageWorkedHoursFromBackend,
 		getTasks: fetchDeveloperTasks,
 		createTask,
 		updateTask,

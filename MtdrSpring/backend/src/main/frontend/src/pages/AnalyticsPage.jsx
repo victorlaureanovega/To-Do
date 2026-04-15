@@ -1,6 +1,9 @@
 ﻿import { useState } from 'react'
 import PageHeader from '../components/common/PageHeader'
 import AnalyticsFilters from '../features/analytics/components/AnalyticsFilters'
+import DeveloperAverageHoursCard from '../features/analytics/components/DeveloperAverageHoursCard'
+import TeamAverageFinishedTasksCard from '../features/analytics/components/TeamAverageFinishedTasksCard'
+import TeamAverageWorkedHoursCard from '../features/analytics/components/TeamAverageWorkedHoursCard'
 import KpiSection from '../features/analytics/components/KpiSection'
 import ChartGrid from '../features/analytics/components/ChartGrid'
 import TasksByStatusChart from '../features/analytics/components/charts/TasksByStatusChart'
@@ -45,6 +48,10 @@ export default function AnalyticsPage() {
         onDeveloperFilterChange={setDeveloperFilter}
         developerOptions={developerOptions}
       />
+
+      <DeveloperAverageHoursCard />
+      <TeamAverageFinishedTasksCard />
+      <TeamAverageWorkedHoursCard />
 
       <KpiSection
         averageCompletionTime={averageCompletionTime}
