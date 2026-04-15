@@ -1,13 +1,7 @@
-package com.springboot.MyTodoList.model;
-
-
+/*package com.springboot.MyTodoList.model;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 
-/*
-    representation of the TODOITEM table that exists already
-    in the autonomous database
- */
 @Entity
 @Table(name = "TODOITEM")
 public class ToDoItem {
@@ -71,4 +65,4 @@ public class ToDoItem {
                 ", done=" + done +
                 '}';
     }
-}
+}*/

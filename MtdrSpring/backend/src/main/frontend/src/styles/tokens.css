@@ -1,0 +1,17 @@
+:root {
+  --bg-page: #eef1f5;
+  --bg-sidebar: #1f2835;
+  --bg-surface: #ffffff;
+  --bg-topbar: #ffffff;
+  --text-primary: #142233;
+  --text-muted: #5c6b7b;
+  --border-soft: #d9e0e8;
+  --accent: #c74634;
+  --accent-dark: #8f3226;
+  --accent-soft: #f9e8e5;
+  --success: #2f855a;
+  --warning: #b7791f;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-soft: 0 6px 20px rgba(15, 23, 42, 0.08);
+}

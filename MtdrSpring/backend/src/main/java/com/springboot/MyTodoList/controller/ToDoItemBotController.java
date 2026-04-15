@@ -1,5 +1,4 @@
-package com.springboot.MyTodoList.controller;
-
+/*package com.springboot.MyTodoList.controller;
 import com.springboot.MyTodoList.config.BotProps;
 import com.springboot.MyTodoList.service.DeepSeekService;
 import com.springboot.MyTodoList.service.ToDoItemService;
@@ -89,6 +88,6 @@ public class ToDoItemBotController  implements SpringLongPollingBot, LongPolling
         System.out.println("Registered bot running state is: " + botSession.isRunning());
     }
 
-}
+}*/
 
 

@@ -1,6 +1,4 @@
-package com.springboot.MyTodoList.repository;
-
-
+/*package com.springboot.MyTodoList.repository;
 import com.springboot.MyTodoList.model.ToDoItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +12,4 @@ import jakarta.transaction.Transactional;
 public interface ToDoItemRepository extends JpaRepository<ToDoItem,Integer> {
 
 
-}
+}*/

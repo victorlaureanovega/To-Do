@@ -1,0 +1,50 @@
+package com.springboot.MyTodoList.repository;
+import com.springboot.MyTodoList.model.Task;
+import com.springboot.MyTodoList.model.User;
+import com.springboot.MyTodoList.dto.DeveloperHours;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+
+@Repository
+public interface TaskRepository extends JpaRepository<Task, Long> {
+    // Buscar tareas de un usuario específico
+    List<Task> findByUser(User user);
+
+    // Para que el bot pueda listar las tareas del usuario que pregunta
+    List<Task> findByUser_TelegramId(Long telegramId);
+
+    // Buscar tareas por estado (ej: 'Pendiente', 'En curso') y si están activas o no
+    List<Task> findByTaskStatusAndIsActive(String status, Integer isActive);
+
+    // Buscar tareas activas de un usuario
+    List<Task> findByUserAndIsActive(User user, Integer isActive);
+
+    // Promedio de horas trabajadas por cada miembro de un equipo
+    // Query para considerar sólo a los que tienen tareas registradas
+    /*@Query("SELECT SUM(t.totalHoursWorked) / COUNT(DISTINCT u.userId) " +
+       "FROM Task t " +
+       "JOIN t.user u " +
+       "WHERE u.team.teamId = :teamId")*/
+       
+    // Query para considerar a todos los miembros del equipo
+    @Query("SELECT " +
+       "(SELECT SUM(t.totalHoursWorked) FROM Task t WHERE t.user.team.teamId = :teamId) / " +
+       "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
+       "FROM Team team WHERE team.teamId = :teamId")
+    Float getAverageWorkedHoursByTeam(@Param("teamId") Long teamId);
+
+    // Promedio de actividades finalizadas por cada miembro de un equipo
+    @Query("SELECT (SELECT CAST(COUNT(t) AS float) FROM Task t WHERE t.user.team.teamId = :teamId AND t.taskStatus = 'Finalizada') / " +
+       "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
+       "FROM Team tm WHERE tm.teamId = :teamId")
+    Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
+
+   // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
+    @Query("SELECT COALESCE(SUM(t.estimatedDuration), 0.0) AS totalEstimatedHours, " +
+           "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
+           "FROM Task t WHERE t.user.userId = :developerId")
+    DeveloperHours getDeveloperHours(@Param("developerId") Long developerId);
+}
