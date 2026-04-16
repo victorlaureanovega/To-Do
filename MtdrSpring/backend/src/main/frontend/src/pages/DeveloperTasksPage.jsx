@@ -3,47 +3,81 @@ import { ChevronDown, ChevronUp, ListChecks } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
 import SectionCard from '../components/common/SectionCard'
 import EmptyState from '../components/common/EmptyState'
-import TaskTable from '../components/tasks/TaskTable'
 import SkeletonCard from '../components/common/SkeletonCard'
 import { useData } from '../hooks/useData'
 import { fetchTeamDevelopers } from '../utils/teamApi'
 
-const STATUS_PRIORITY = {
-  'To Do': 1,
-  'In Progress': 2,
-  Completed: 3,
-}
-
-const normalizeStatus = (taskStatus) => {
-  const normalized = String(taskStatus ?? '').trim().toLowerCase()
-
-  if (normalized.includes('pend') || normalized === 'todo' || normalized.includes('to do')) {
-    return 'To Do'
-  }
-
-  if (normalized.includes('curso') || normalized.includes('progress') || normalized.includes('progreso')) {
-    return 'In Progress'
-  }
-
-  if (normalized.includes('final') || normalized.includes('complete') || normalized.includes('done')) {
-    return 'Completed'
-  }
-
-  return 'To Do'
-}
-
-const mapTaskToUi = (task) => ({
-  id: String(task?.taskId ?? ''),
-  title: task?.content ? task.content.slice(0, 80) : `Task ${task?.taskId ?? ''}`,
-  description: task?.content ?? '',
-  status: normalizeStatus(task?.taskStatus),
-  estimatedDuration: task?.estimatedDuration != null ? String(task.estimatedDuration) : '',
-  createdAt: task?.creationDate ? String(task.creationDate).split('T')[0] : '',
-})
-
 const getDisplayName = (developer) => {
   const fullName = `${developer?.firstName ?? ''} ${developer?.lastName ?? ''}`.trim()
   return fullName || developer?.username || `Developer ${developer?.userId ?? ''}`
+}
+
+const EMPTY_VALUE = 'N/A'
+
+const formatDuration = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return EMPTY_VALUE
+  }
+
+  const numeric = Number(value)
+  if (Number.isNaN(numeric)) {
+    return String(value)
+  }
+
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(numeric)} h`
+}
+
+const formatDate = (value) => {
+  if (!value) {
+    return EMPTY_VALUE
+  }
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return String(value)
+  }
+
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  })
+}
+
+const getTaskType = (task) => {
+  const typeName = task?.type?.name ?? task?.typeName
+  if (typeName && String(typeName).trim()) {
+    return String(typeName)
+  }
+
+  const typeId = task?.type?.typeId ?? task?.typeId
+  if (typeId != null && String(typeId).trim()) {
+    return `Type ${typeId}`
+  }
+
+  return EMPTY_VALUE
+}
+
+const getTaskStatusLabel = (task) => {
+  const value = task?.taskStatus
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return EMPTY_VALUE
+  }
+
+  return String(value)
+}
+
+const getTaskStatusTone = (task) => {
+  const normalized = String(task?.taskStatus ?? '').trim().toLowerCase()
+  if (
+    normalized.includes('pend')
+    || normalized.includes('todo')
+    || normalized.includes('to do')
+  ) {
+    return 'developer-task-status--red'
+  }
+
+  return 'developer-task-status--blue'
 }
 
 export default function DeveloperTasksPage() {
@@ -91,21 +125,10 @@ export default function DeveloperTasksPage() {
             const payload = await response.json()
             const rawTasks = Array.isArray(payload) ? payload : []
 
-            const sortedTasks = rawTasks
-              .map(mapTaskToUi)
-              .sort((a, b) => {
-                const statusOrder = (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99)
-                if (statusOrder !== 0) {
-                  return statusOrder
-                }
-                return String(a.title).localeCompare(String(b.title))
-              })
-
             return {
               developerId: String(developerId ?? ''),
               developerName: getDisplayName(developer),
-              rawPayload: payload,
-              tasks: sortedTasks,
+              tasks: rawTasks,
             }
           }),
         )
@@ -153,10 +176,10 @@ export default function DeveloperTasksPage() {
     <>
       <PageHeader
         title="My Tasks"
-        subtitle="Tasks grouped by team member using backend task data."
+        subtitle="Find out what your team members are up to."
       />
 
-      <SectionCard title={`Team task groups (${totalTasks})`} noPad>
+      <SectionCard title={`My team's tasks (${totalTasks})`} noPad>
         {error && (
           <div style={{ padding: '1rem', color: 'var(--error)' }}>
             Error loading backend tasks: {error.message}
@@ -200,7 +223,38 @@ export default function DeveloperTasksPage() {
                           message="Backend returned an empty task list for this team member."
                         />
                       ) : (
-                        <TaskTable tasks={group.tasks} readOnly />
+                        <div className="table-wrap developer-task-group__table-wrap">
+                          <table className="data-table developer-task-group__table">
+                            <thead>
+                              <tr>
+                                <th>Task</th>
+                                <th>Task status</th>
+                                <th>Type</th>
+                                <th>Creation date</th>
+                                <th>Estimated duration</th>
+                                <th>Finish Date</th>
+                                <th>Real duration</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {group.tasks.map((task, index) => (
+                                <tr key={task?.taskId ?? index}>
+                                  <td className="developer-task-cell-task">{task?.content || EMPTY_VALUE}</td>
+                                  <td>
+                                    <span className={`developer-task-status ${getTaskStatusTone(task)}`}>
+                                      {getTaskStatusLabel(task)}
+                                    </span>
+                                  </td>
+                                  <td>{getTaskType(task)}</td>
+                                  <td>{formatDate(task?.creationDate)}</td>
+                                  <td>{formatDuration(task?.estimatedDuration)}</td>
+                                  <td>{formatDate(task?.finishDate)}</td>
+                                  <td>{formatDuration(task?.realDuration)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
                   )}
