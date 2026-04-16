@@ -47,4 +47,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
            "FROM Task t WHERE t.user.userId = :developerId")
     DeveloperHours getDeveloperHours(@Param("developerId") Long developerId);
+
+    // Obtener la tasa de retrabajo de un equipo
+    @Query("SELECT " +
+       "(COUNT(CASE WHEN t.everFinished = 1 AND t.taskStatus != 'Finalizada' THEN 1 END) * 1.0) / " +
+       "NULLIF(COUNT(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 END), 0) " +
+       "FROM Task t")
+    Float getReworkRateByTeam(@Param("teamId") Long teamId);
 }

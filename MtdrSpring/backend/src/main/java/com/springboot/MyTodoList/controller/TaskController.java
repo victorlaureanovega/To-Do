@@ -53,4 +53,12 @@ public class TaskController {
     public DeveloperHours getHoursByDeveloper(@PathVariable Long developerId) {
         return taskRepository.getDeveloperHours(developerId);
     }
+
+    // Obtener la tasa de retrabajo
+    @GetMapping("/rework-rate/by-team/{teamId}")
+    public Float getReworkRateByTeam(@PathVariable Long teamId) {
+        Float rate = taskRepository.getReworkRateByTeam(teamId);
+
+        return rate;
+    }
 }
