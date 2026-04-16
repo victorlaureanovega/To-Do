@@ -2,6 +2,9 @@ package com.springboot.MyTodoList.repository;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
+import com.springboot.MyTodoList.dto.TaskTypeCount;
+
+import org.checkerframework.checker.units.qual.t;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -55,4 +58,11 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "FROM Task t JOIN t.user u " + 
        "WHERE u.team.teamId = :teamId")
     Float getReworkRateByTeam(@Param("teamId") Long teamId);
+
+    // Obtener todas las tareas por tipo
+    @Query("SELECT tt.name AS typeName, COUNT(t) AS count " +
+       "FROM Task t " + "JOIN t.type tt " +
+       "JOIN t.user u " + "WHERE u.team.teamId = :teamId " +
+       "GROUP BY tt.name")
+    List<TaskTypeCount> getAllTasksByType(@Param("teamId") Long teamId);
 }

@@ -3,9 +3,9 @@ import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
+import com.springboot.MyTodoList.dto.TaskTypeCount;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -15,11 +15,16 @@ public class TaskController {
     @Autowired
     private TaskRepository taskRepository;
 
-
     // Obtener todas las tareas en la base de datos
     @GetMapping
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
+    }
+
+    // Obtener todas las tareas agrupadas por tipos
+    @GetMapping("/by-type/by-team/{teamId}")
+    public List<TaskTypeCount> getAllTasksByType(@PathVariable Long teamId) {
+        return taskRepository.getAllTasksByType(teamId);
     }
 
     // Obtener todas las tareas de un usuario específico
