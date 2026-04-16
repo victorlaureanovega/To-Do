@@ -313,6 +313,17 @@
   word-break: break-word;
 }
 
+.developer-task-group__table.data-table th,
+.developer-task-group__table.data-table td {
+  white-space: normal;
+}
+
+.developer-task-header-two-line {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
 .developer-task-cell-task {
   font-weight: 700;
   color: var(--text-primary);
@@ -332,15 +343,15 @@
 }
 
 .developer-task-status--red {
-  color: #b42318;
-  background: #ffe4e2;
-  border-color: #fecdca;
+  color: #FFA02E;
+  background: rgba(255, 160, 46, 0.2);
+  border-color: rgba(255, 160, 46, 0.42);
 }
 
 .developer-task-status--blue {
-  color: #1849a9;
-  background: #dbeafe;
-  border-color: #bfdbfe;
+  color: #468432;
+  background: rgba(154, 216, 114, 0.2);
+  border-color: rgba(154, 216, 114, 0.42);
 }
 
 .developer-task-group__tasks {
@@ -452,29 +463,29 @@
 
 .status-badge--todo,
 .status-badge.todo {
-  background: rgba(206, 38, 38, 0.2);
+  background: rgba(255, 160, 46, 0.2);
   color: var(--status-todo);
-  border-color: rgba(206, 38, 38, 0.42);
+  border-color: rgba(255, 160, 46, 0.42);
 }
 
 .status-badge--in-progress,
 .status-badge.in-progress {
-  background: rgba(184, 50, 50, 0.2);
+  background: rgba(255, 239, 145, 0.2);
   color: var(--status-in-progress);
-  border-color: rgba(184, 50, 50, 0.42);
+  border-color: rgba(255, 239, 145, 0.42);
 }
 
 .status-badge--completed,
 .status-badge.completed {
-  background: rgba(125, 170, 203, 0.24);
+  background: rgba(154, 216, 114, 0.24);
   color: var(--status-completed);
-  border-color: rgba(125, 170, 203, 0.42);
+  border-color: rgba(154, 216, 114, 0.42);
 }
 
 .status-badge--blocked {
-  background: rgba(18, 74, 150, 0.22);
+  background: rgba(255, 160, 46, 0.22);
   color: var(--status-blocked);
-  border-color: rgba(92, 146, 220, 0.38);
+  border-color: rgba(255, 160, 46, 0.38);
 }
 
 /* Empty state */
@@ -964,6 +975,10 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.analytics-grid__full-row {
+  grid-column: 1 / -1;
 }
 
 .analytics-grid .section-card:last-child {

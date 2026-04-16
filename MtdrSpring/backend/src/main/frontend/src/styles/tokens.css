@@ -13,13 +13,13 @@
   --text-muted: #b1c7e7;
   --text-on-dark: #f8fbff;
 
-  --accent: #1d68c8;
-  --accent-dark: #2f79d8;
-  --accent-bright: #3f8df0;
-  --accent-soft: rgba(63, 141, 240, 0.32);
-  --success: #5da9ff;
-  --warning: #2f79d8;
-  --error: #7fb8ff;
+  --accent: #9AD872;
+  --accent-dark: #468432;
+  --accent-bright: #FFEF91;
+  --accent-soft: rgba(154, 216, 114, 0.32);
+  --success: #9AD872;
+  --warning: #FFEF91;
+  --error: #FFA02E;
 
   --border-soft: rgba(102, 152, 220, 0.34);
   --border-strong: rgba(102, 152, 220, 0.56);
@@ -44,30 +44,30 @@
   --focus-ring: 0 0 0 3px rgba(111, 173, 255, 0.42);
   --grid-stroke: rgba(255, 255, 255, 0.28);
 
-  --status-todo: #ce2626;
-  --status-in-progress: #b83232;
-  --status-completed: #7daacb;
-  --status-blocked: #ce2626;
+  --status-todo: #FFA02E;
+  --status-in-progress: #FFEF91;
+  --status-completed: #9AD872;
+  --status-blocked: #FFA02E;
 
-  --task-type-bug: #7daacb;
-  --task-type-feature: #ce2626;
-  --task-type-research: #6c9bbb;
-  --task-type-documentation: #b83232;
+  --task-type-bug: #9AD872;
+  --task-type-feature: #FFA02E;
+  --task-type-research: #468432;
+  --task-type-documentation: #FFEF91;
 
-  --chart-status-todo: #ce2626;
-  --chart-status-in-progress: #b83232;
-  --chart-status-completed: #7daacb;
-  --chart-time-estimated: #ce2626;
-  --chart-time-real: #7daacb;
-  --chart-team-completed: #7daacb;
-  --chart-team-pending: #ce2626;
-  --chart-registered: #ce2626;
-  --chart-finished: #7daacb;
+  --chart-status-todo: #FFA02E;
+  --chart-status-in-progress: #FFEF91;
+  --chart-status-completed: #9AD872;
+  --chart-time-estimated: #FFA02E;
+  --chart-time-real: #9AD872;
+  --chart-team-completed: #468432;
+  --chart-team-pending: #FFA02E;
+  --chart-registered: #FFA02E;
+  --chart-finished: #9AD872;
   --chart-axis-stroke: #ffffff;
   --chart-axis-tick: #ffffff;
-  --chart-legend-text: #e8dbb3;
-  --chart-pie-label: #e8dbb3;
+  --chart-legend-text: #FFEF91;
+  --chart-pie-label: #FFEF91;
   --chart-tooltip-bg: rgba(10, 24, 50, 0.96);
-  --chart-tooltip-border: rgba(232, 219, 179, 0.55);
-  --chart-tooltip-text: #e8dbb3;
+  --chart-tooltip-border: rgba(255, 239, 145, 0.55);
+  --chart-tooltip-text: #FFEF91;
 }

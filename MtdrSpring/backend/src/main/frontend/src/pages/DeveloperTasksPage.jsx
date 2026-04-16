@@ -14,6 +14,14 @@ const getDisplayName = (developer) => {
 
 const EMPTY_VALUE = 'N/A'
 
+const hasValue = (value) => (
+  value !== null
+  && value !== undefined
+  && String(value).trim() !== ''
+)
+
+const pickFirstValue = (...values) => values.find((value) => hasValue(value))
+
 const formatDuration = (value) => {
   if (value === null || value === undefined || value === '') {
     return EMPTY_VALUE
@@ -45,7 +53,7 @@ const formatDate = (value) => {
 }
 
 const getTaskType = (task) => {
-  const typeName = task?.type?.name ?? task?.typeName
+  const typeName = pickFirstValue(task?.type?.name, task?.typeName, task?.taskType)
   if (typeName && String(typeName).trim()) {
     return String(typeName)
   }
@@ -59,7 +67,7 @@ const getTaskType = (task) => {
 }
 
 const getTaskStatusLabel = (task) => {
-  const value = task?.taskStatus
+  const value = pickFirstValue(task?.taskStatus, task?.status, task?.taskState)
   if (value === null || value === undefined || String(value).trim() === '') {
     return EMPTY_VALUE
   }
@@ -68,7 +76,9 @@ const getTaskStatusLabel = (task) => {
 }
 
 const getTaskStatusTone = (task) => {
-  const normalized = String(task?.taskStatus ?? '').trim().toLowerCase()
+  const normalized = String(
+    pickFirstValue(task?.taskStatus, task?.status, task?.taskState) ?? '',
+  ).trim().toLowerCase()
   if (
     normalized.includes('pend')
     || normalized.includes('todo')
@@ -79,6 +89,35 @@ const getTaskStatusTone = (task) => {
 
   return 'developer-task-status--blue'
 }
+
+const getTaskContent = (task) => String(
+  pickFirstValue(task?.content, task?.description, task?.title, task?.name) ?? EMPTY_VALUE,
+)
+
+const getCreationDate = (task) => pickFirstValue(
+  task?.creationDate,
+  task?.createdAt,
+  task?.taskDate,
+  task?.date,
+)
+
+const getEstimatedDuration = (task) => pickFirstValue(
+  task?.estimatedDuration,
+  task?.estimatedHours,
+  task?.plannedDuration,
+)
+
+const getFinishDate = (task) => pickFirstValue(
+  task?.finishDate,
+  task?.finishedDate,
+  task?.completionDate,
+)
+
+const getRealDuration = (task) => pickFirstValue(
+  task?.realDuration,
+  task?.totalHoursWorked,
+  task?.workedHours,
+)
 
 export default function DeveloperTasksPage() {
   const { teamId } = useData()
@@ -175,11 +214,11 @@ export default function DeveloperTasksPage() {
   return (
     <>
       <PageHeader
-        title="My Tasks"
+        title="My Team's Tasks"
         subtitle="Find out what your team members are up to."
       />
 
-      <SectionCard title={`My team's tasks (${totalTasks})`} noPad>
+      <SectionCard title={`Total taks in the team: ${totalTasks}`} noPad>
         {error && (
           <div style={{ padding: '1rem', color: 'var(--error)' }}>
             Error loading backend tasks: {error.message}
@@ -231,25 +270,35 @@ export default function DeveloperTasksPage() {
                                 <th>Task status</th>
                                 <th>Type</th>
                                 <th>Creation date</th>
-                                <th>Estimated duration</th>
-                                <th>Finish Date</th>
+                                <th>
+                                  <span className="developer-task-header-two-line">
+                                    <span>Estimated</span>
+                                    <span>Duration</span>
+                                  </span>
+                                </th>
+                                <th>
+                                  <span className="developer-task-header-two-line">
+                                    <span>Finish</span>
+                                    <span>Date</span>
+                                  </span>
+                                </th>
                                 <th>Real duration</th>
                               </tr>
                             </thead>
                             <tbody>
                               {group.tasks.map((task, index) => (
                                 <tr key={task?.taskId ?? index}>
-                                  <td className="developer-task-cell-task">{task?.content || EMPTY_VALUE}</td>
+                                  <td className="developer-task-cell-task">{getTaskContent(task)}</td>
                                   <td>
                                     <span className={`developer-task-status ${getTaskStatusTone(task)}`}>
                                       {getTaskStatusLabel(task)}
                                     </span>
                                   </td>
                                   <td>{getTaskType(task)}</td>
-                                  <td>{formatDate(task?.creationDate)}</td>
-                                  <td>{formatDuration(task?.estimatedDuration)}</td>
-                                  <td>{formatDate(task?.finishDate)}</td>
-                                  <td>{formatDuration(task?.realDuration)}</td>
+                                  <td>{formatDate(getCreationDate(task))}</td>
+                                  <td>{formatDuration(getEstimatedDuration(task))}</td>
+                                  <td>{formatDate(getFinishDate(task))}</td>
+                                  <td>{formatDuration(getRealDuration(task))}</td>
                                 </tr>
                               ))}
                             </tbody>
