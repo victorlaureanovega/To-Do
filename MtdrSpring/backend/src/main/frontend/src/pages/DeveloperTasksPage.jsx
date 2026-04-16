@@ -175,7 +175,6 @@ export default function DeveloperTasksPage() {
           <div className="developer-task-groups">
             {developerGroups.map((group) => {
               const isExpanded = expandedIds[group.developerId] ?? true
-              const groupPayload = JSON.stringify(group.rawPayload, null, 2)
 
               return (
                 <div key={group.developerId} className="developer-task-group">
@@ -203,11 +202,6 @@ export default function DeveloperTasksPage() {
                       ) : (
                         <TaskTable tasks={group.tasks} readOnly />
                       )}
-
-                      <details className="developer-task-group__payload">
-                        <summary>View backend payload</summary>
-                        <pre>{groupPayload}</pre>
-                      </details>
                     </div>
                   )}
                 </div>
