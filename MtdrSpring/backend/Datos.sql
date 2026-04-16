@@ -31,14 +31,14 @@ INSERT INTO APP_USER.Users (telegramId, username, firstName, lastName, role, tea
 
 -- Tareas
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
-    VALUES (1, 1, 'Probar conexión con Oracle y Spring Boot', 'Pendiente', 0.0, 2.5, 1, 0, CURRENT_DATE, NULL);
+    VALUES (1, 1, 'Probar conexión con Oracle y Spring Boot', 'Pendiente', 1.0, 1.0, 1, 0, CURRENT_DATE, NULL);
 
 -- Víctor - 8
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
     VALUES (8, 1, 'Hacer la endpoint para obtener las tareas de un desarrollador específico', 'En curso', 0.5, 1.5, 1, 0, CURRENT_DATE, NULL);
 
-INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
-    VALUES (8, 1, 'Hacer la endpoint para obtener el promedio de horas trabajadas por un equipo', 'En curso', 0.5, 2.0, 1, 0, CURRENT_DATE, NULL);
+INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, estimatedDuration, realDuration, totalHoursWorked, isActive, everFinished, creationDate, finishDate) 
+    VALUES (8, 1, 'Hacer la endpoint para obtener el promedio de horas trabajadas por un equipo', 'Finalizada', 2.0, 2.2, 2.2, 1, 1, CURRENT_DATE - 1, CURRENT_DATE);
 
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
     VALUES (8, 1, 'Implementar las primeras versiones de los repositorios, controladores y servicios del backend', 'Finalizada', 2.0, 2.5, 1, 1, CURRENT_DATE - 1, CURRENT_DATE);
@@ -48,6 +48,10 @@ INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked
 
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
     VALUES (8, 1, 'Crear la nueva base de datos en Oracle Autonomous Database', 'Finalizada', 1.0, 1.5, 1, 1, CURRENT_DATE - 1, CURRENT_DATE);
+
+-- Nueva tarea para Víctor (userId=8)
+INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, estimatedDuration, realDuration, totalHoursWorked, isActive, everFinished, creationDate, finishDate) 
+    VALUES (8, 1, 'Crear endpoint para obtener la tasa de retrabajo de un equipo', 'En curso', 3.0, 0.0, 1.2, 1, 0, CURRENT_DATE, NULL);
 
 -- Salvador - 9
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
@@ -88,5 +92,9 @@ INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked
 -- Eugenio - 13
 INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, totalHoursWorked, estimatedDuration, isActive, everFinished, creationDate, finishDate) 
     VALUES (13, 1, 'Sprint 1, Diseño y arquitectura', 'Finalizada', 4.0, 4.0, 1, 1, CURRENT_DATE - 3, CURRENT_DATE);
+
+-- Nueva tarea para Eugenio (userId=13)
+INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, estimatedDuration, realDuration, totalHoursWorked, isActive, everFinished, creationDate, finishDate) 
+    VALUES (13, 1, 'Mejorar la interfaz del frontend', 'Pendiente', 4.5, 0.0, 0.0, 1, 0, CURRENT_DATE, NULL);
 
 COMMIT;

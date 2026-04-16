@@ -4,6 +4,7 @@ import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
+import com.springboot.MyTodoList.dto.TaskByDate;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -65,5 +66,10 @@ public class TaskController {
         Float rate = taskRepository.getReworkRateByTeam(teamId);
 
         return rate;
+    }
+
+    @GetMapping("/grouped-by-date")
+    public List<TaskByDate> getTasksGroupedByDate() {
+        return taskRepository.getTasksGroupedByDate();
     }
 }

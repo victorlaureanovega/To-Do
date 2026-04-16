@@ -274,6 +274,140 @@
   background: var(--bg-surface);
 }
 
+.developer-task-group__table-wrap {
+  padding: 0.9rem;
+  overflow-x: visible;
+}
+
+.developer-task-group__table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.developer-task-group__table th:nth-child(1) {
+  width: 32%;
+}
+
+.developer-task-group__table th:nth-child(2) {
+  width: 11%;
+}
+
+.developer-task-group__table th:nth-child(3) {
+  width: 9%;
+}
+
+.developer-task-group__table th:nth-child(4),
+.developer-task-group__table th:nth-child(6) {
+  width: 13%;
+}
+
+.developer-task-group__table th:nth-child(5),
+.developer-task-group__table th:nth-child(7) {
+  width: 11%;
+}
+
+.developer-task-group__table th,
+.developer-task-group__table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.developer-task-cell-task {
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.developer-task-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.developer-task-status--red {
+  color: #b42318;
+  background: #ffe4e2;
+  border-color: #fecdca;
+}
+
+.developer-task-status--blue {
+  color: #1849a9;
+  background: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.developer-task-group__tasks {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.9rem;
+}
+
+.developer-task-group__task {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xs);
+  background: var(--surface-highlight);
+  padding: 0.85rem;
+}
+
+.developer-task-group__task-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.developer-task-group__fields {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.developer-task-group__field {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.developer-task-group__field:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.developer-task-group__field dt {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.developer-task-group__field dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.developer-task-group__field pre {
+  margin: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
 .developer-task-group__payload {
   margin: 0.9rem;
   border: 1px solid var(--border-soft);

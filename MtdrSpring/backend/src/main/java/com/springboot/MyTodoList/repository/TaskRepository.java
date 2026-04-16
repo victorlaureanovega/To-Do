@@ -5,6 +5,7 @@ import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
 
 import org.checkerframework.checker.units.qual.t;
+import com.springboot.MyTodoList.dto.TaskByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -65,4 +66,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "JOIN t.user u " + "WHERE u.team.teamId = :teamId " +
        "GROUP BY tt.name")
     List<TaskTypeCount> getAllTasksByType(@Param("teamId") Long teamId);
+    // Get all tasks grouped by creation date (Total vs Completed)
+    @Query("SELECT FUNCTION('TRUNC', t.creationDate) AS date, " +
+           "COUNT(t.taskId) AS registered, " +
+           "SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 ELSE 0 END) AS completed " +
+           "FROM Task t " +
+           "GROUP BY FUNCTION('TRUNC', t.creationDate) " +
+           "ORDER BY FUNCTION('TRUNC', t.creationDate) ASC")
+    List<TaskByDate> getTasksGroupedByDate();
 }
