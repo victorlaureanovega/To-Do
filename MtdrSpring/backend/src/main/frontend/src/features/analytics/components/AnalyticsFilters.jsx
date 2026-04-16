@@ -16,6 +16,11 @@ export default function AnalyticsFilters({
 }) {
 	const [dateRange, setDateRange] = useState({ start: '', end: '' })
 
+	const handleClearFilters = () => {
+		onDeveloperFilterChange('all')
+		setDateRange({ start: '', end: '' })
+	}
+
 	return (
 		<SectionCard
 			title="Filters"
@@ -33,7 +38,7 @@ export default function AnalyticsFilters({
 							},
 						]}
 					/>
-					<button type="button" className="btn btn-ghost analytics-filters-clear">
+					<button type="button" className="btn btn-ghost analytics-filters-clear" onClick={handleClearFilters}>
 						Clear filters
 					</button>
 				</div>

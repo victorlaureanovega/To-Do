@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource/public-sans": "^5.2.7",
+    "@fontsource/manrope": "^5.2.8",
+    "@fontsource/sora": "^5.2.8",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",

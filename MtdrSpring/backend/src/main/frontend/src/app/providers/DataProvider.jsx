@@ -9,8 +9,10 @@
  */
 
 import { createContext, useState, useCallback, useEffect } from 'react'
+import { useAuth } from '../../hooks/useAuth'
 import { taskService } from '../../services/api/taskService'
 import { analyticsService } from '../../services/api/analyticsService'
+import { resolveTeamIdFromUser } from '../../utils/teamScope'
 
 export const DataContext = createContext(null)
 
@@ -31,6 +33,9 @@ const mapBackendTaskToUiTask = (task) => {
 }
 
 export function DataProvider({ children }) {
+	const { user } = useAuth()
+	const teamId = resolveTeamIdFromUser(user)
+
 	// Tasks state (developer tasks)
 	const [developerTasks, setDeveloperTasks] = useState([])
 	const [tasksLoading, setTasksLoading] = useState(false)
@@ -76,8 +81,9 @@ export function DataProvider({ children }) {
 
 	// Connectivity smoke test: calls backend endpoint /api/tasks/by-developer/{id}.
 	// This is opt-in and does not replace existing mock-driven flows.
-	const fetchDeveloperTasksFromBackend = useCallback(async (developerId) => {
-		if (!developerId) {
+	const fetchDeveloperTasksFromBackend = useCallback(async (developerId = teamId) => {
+		const resolvedDeveloperId = String(developerId ?? teamId).trim()
+		if (!resolvedDeveloperId) {
 			const error = {
 				message: 'Developer ID is required',
 				code: 'VALIDATION_ERROR',
@@ -92,8 +98,8 @@ export function DataProvider({ children }) {
 
 		try {
 			const endpoint = apiBaseUrl
-				? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
-				: `/api/tasks/by-developer/${developerId}`
+				? `${apiBaseUrl}/api/tasks/by-developer/${resolvedDeveloperId}`
+				: `/api/tasks/by-developer/${resolvedDeveloperId}`
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -190,7 +196,7 @@ export function DataProvider({ children }) {
 			const averageWorkedHours = taskCount > 0 ? totalWorkedHours / taskCount : 0
 
 			const payload = {
-				developerId: String(developerId),
+				developerId: resolvedDeveloperId,
 				averageWorkedHours,
 				totalWorkedHours,
 				totalEstimatedHours,
@@ -212,11 +218,12 @@ export function DataProvider({ children }) {
 		} finally {
 			setDeveloperHoursLoading(false)
 		}
-	}, [])
+	}, [teamId])
 
 	// KPI backend call: average finished tasks per member for a team.
-	const fetchTeamAverageFinishedTasksFromBackend = useCallback(async (teamId) => {
-		if (!teamId) {
+	const fetchTeamAverageFinishedTasksFromBackend = useCallback(async (selectedTeamId = teamId) => {
+		const resolvedTeamId = String(selectedTeamId ?? teamId).trim()
+		if (!resolvedTeamId) {
 			const error = {
 				message: 'Team ID is required',
 				code: 'VALIDATION_ERROR',
@@ -231,8 +238,8 @@ export function DataProvider({ children }) {
 
 		try {
 			const endpoint = apiBaseUrl
-				? `${apiBaseUrl}/api/tasks/average-by-team/${teamId}`
-				: `/api/tasks/average-by-team/${teamId}`
+				? `${apiBaseUrl}/api/tasks/average-by-team/${resolvedTeamId}`
+				: `/api/tasks/average-by-team/${resolvedTeamId}`
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -255,7 +262,7 @@ export function DataProvider({ children }) {
 			const averageFinishedTasks = Number(rawAverage ?? 0)
 
 			const payload = {
-				teamId: String(teamId),
+				teamId: resolvedTeamId,
 				averageFinishedTasks,
 			}
 
@@ -274,11 +281,12 @@ export function DataProvider({ children }) {
 		} finally {
 			setTeamAverageFinishedTasksLoading(false)
 		}
-	}, [])
+	}, [teamId])
 
 	// KPI backend call: average worked hours per member for a team.
-	const fetchTeamAverageWorkedHoursFromBackend = useCallback(async (teamId) => {
-		if (!teamId) {
+	const fetchTeamAverageWorkedHoursFromBackend = useCallback(async (selectedTeamId = teamId) => {
+		const resolvedTeamId = String(selectedTeamId ?? teamId).trim()
+		if (!resolvedTeamId) {
 			const error = {
 				message: 'Team ID is required',
 				code: 'VALIDATION_ERROR',
@@ -293,8 +301,8 @@ export function DataProvider({ children }) {
 
 		try {
 			const endpoint = apiBaseUrl
-				? `${apiBaseUrl}/api/tasks/hours/average-by-team/${teamId}`
-				: `/api/tasks/hours/average-by-team/${teamId}`
+				? `${apiBaseUrl}/api/tasks/hours/average-by-team/${resolvedTeamId}`
+				: `/api/tasks/hours/average-by-team/${resolvedTeamId}`
 
 			const response = await fetch(endpoint, {
 				method: 'GET',
@@ -317,7 +325,7 @@ export function DataProvider({ children }) {
 			const averageWorkedHours = Number(rawAverage ?? 0)
 
 			const payload = {
-				teamId: String(teamId),
+				teamId: resolvedTeamId,
 				averageWorkedHours,
 			}
 
@@ -336,7 +344,7 @@ export function DataProvider({ children }) {
 		} finally {
 			setTeamAverageWorkedHoursLoading(false)
 		}
-	}, [])
+	}, [teamId])
 
 	const createTask = useCallback(async (taskData) => {
 		const response = await taskService.createTask(taskData)
@@ -386,7 +394,7 @@ export function DataProvider({ children }) {
 		setTeamTasksLoading(true)
 		setTeamTasksError(null)
 
-		const response = await taskService.fetchTeamTasks(filters)
+		const response = await taskService.fetchTeamTasks({ ...filters, teamId })
 
 		if (response.success) {
 			setTeamTasks(response.data)
@@ -397,7 +405,7 @@ export function DataProvider({ children }) {
 
 		setTeamTasksLoading(false)
 		return response
-	}, [])
+	}, [teamId])
 
 	// ==================== Analytics Operations ====================
 
@@ -405,7 +413,7 @@ export function DataProvider({ children }) {
 		setAnalyticsLoading(true)
 		setAnalyticsError(null)
 
-		const response = await analyticsService.fetchDashboardMetrics(filters)
+		const response = await analyticsService.fetchDashboardMetrics({ ...filters, teamId })
 
 		if (response.success) {
 			setAnalytics(response.data)
@@ -416,16 +424,27 @@ export function DataProvider({ children }) {
 
 		setAnalyticsLoading(false)
 		return response
-	}, [])
+	}, [teamId])
 
 	// ==================== Initialize on Mount ====================
 
 	useEffect(() => {
 		// Fetch initial data when app loads
-		fetchDeveloperTasks()
+		fetchDeveloperTasksFromBackend()
+		fetchDeveloperAverageHoursFromBackend()
+		fetchTeamAverageFinishedTasksFromBackend()
+		fetchTeamAverageWorkedHoursFromBackend()
 		fetchTeamTasks()
 		fetchAnalytics()
-	}, [fetchDeveloperTasks, fetchTeamTasks, fetchAnalytics])
+	}, [
+		teamId,
+		fetchDeveloperTasksFromBackend,
+		fetchDeveloperAverageHoursFromBackend,
+		fetchTeamAverageFinishedTasksFromBackend,
+		fetchTeamAverageWorkedHoursFromBackend,
+		fetchTeamTasks,
+		fetchAnalytics,
+	])
 
 	// ==================== Context Value ====================
 
@@ -461,6 +480,7 @@ export function DataProvider({ children }) {
 		getTeamTasks: fetchTeamTasks,
 
 		// Analytics
+		teamId,
 		analytics,
 		analyticsLoading,
 		analyticsError,

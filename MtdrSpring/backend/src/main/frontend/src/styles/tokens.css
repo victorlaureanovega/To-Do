@@ -1,17 +1,73 @@
 :root {
-  --bg-page: #eef1f5;
-  --bg-sidebar: #1f2835;
-  --bg-surface: #ffffff;
-  --bg-topbar: #ffffff;
-  --text-primary: #142233;
-  --text-muted: #5c6b7b;
-  --border-soft: #d9e0e8;
-  --accent: #c74634;
-  --accent-dark: #8f3226;
-  --accent-soft: #f9e8e5;
-  --success: #2f855a;
-  --warning: #b7791f;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --shadow-soft: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --font-body: 'Manrope', 'Segoe UI', sans-serif;
+  --font-display: 'Sora', 'Segoe UI', sans-serif;
+
+  --bg-page: #03060d;
+  --bg-page-alt: #091226;
+  --bg-sidebar: rgba(8, 20, 44, 0.82);
+  --bg-surface: rgba(10, 24, 50, 0.56);
+  --bg-surface-strong: rgba(11, 30, 62, 0.72);
+  --bg-topbar: rgba(10, 24, 52, 0.68);
+
+  --text-primary: #f3f8ff;
+  --text-muted: #b1c7e7;
+  --text-on-dark: #f8fbff;
+
+  --accent: #1d68c8;
+  --accent-dark: #2f79d8;
+  --accent-bright: #3f8df0;
+  --accent-soft: rgba(63, 141, 240, 0.32);
+  --success: #5da9ff;
+  --warning: #2f79d8;
+  --error: #7fb8ff;
+
+  --border-soft: rgba(102, 152, 220, 0.34);
+  --border-strong: rgba(102, 152, 220, 0.56);
+
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+
+  --shadow-soft: 0 12px 30px rgba(1, 8, 20, 0.5);
+  --shadow-strong: 0 22px 52px rgba(0, 3, 12, 0.72);
+
+  --glass-blur: 16px;
+  --glass-blur-strong: 22px;
+  --glass-outline: 1px solid rgba(167, 199, 248, 0.25);
+
+  --overlay: rgba(2, 7, 18, 0.74);
+  --surface-highlight: rgba(94, 141, 210, 0.15);
+  --surface-highlight-strong: rgba(121, 167, 231, 0.2);
+
+  --table-row-hover: rgba(37, 85, 158, 0.34);
+  --focus-ring: 0 0 0 3px rgba(111, 173, 255, 0.42);
+  --grid-stroke: rgba(255, 255, 255, 0.28);
+
+  --status-todo: #ce2626;
+  --status-in-progress: #b83232;
+  --status-completed: #7daacb;
+  --status-blocked: #ce2626;
+
+  --task-type-bug: #7daacb;
+  --task-type-feature: #ce2626;
+  --task-type-research: #6c9bbb;
+  --task-type-documentation: #b83232;
+
+  --chart-status-todo: #ce2626;
+  --chart-status-in-progress: #b83232;
+  --chart-status-completed: #7daacb;
+  --chart-time-estimated: #ce2626;
+  --chart-time-real: #7daacb;
+  --chart-team-completed: #7daacb;
+  --chart-team-pending: #ce2626;
+  --chart-registered: #ce2626;
+  --chart-finished: #7daacb;
+  --chart-axis-stroke: #ffffff;
+  --chart-axis-tick: #ffffff;
+  --chart-legend-text: #e8dbb3;
+  --chart-pie-label: #e8dbb3;
+  --chart-tooltip-bg: rgba(10, 24, 50, 0.96);
+  --chart-tooltip-border: rgba(232, 219, 179, 0.55);
+  --chart-tooltip-text: #e8dbb3;
 }
