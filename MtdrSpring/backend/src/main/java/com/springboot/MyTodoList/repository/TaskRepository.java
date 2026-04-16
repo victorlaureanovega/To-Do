@@ -2,6 +2,7 @@ package com.springboot.MyTodoList.repository;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
+import com.springboot.MyTodoList.dto.TaskByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -55,4 +56,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "FROM Task t JOIN t.user u " + 
        "WHERE u.team.teamId = :teamId")
     Float getReworkRateByTeam(@Param("teamId") Long teamId);
+
+    // Get all tasks grouped by creation date (Total vs Completed)
+    @Query("SELECT FUNCTION('TRUNC', t.creationDate) AS date, " +
+           "COUNT(t.taskId) AS registered, " +
+           "SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 ELSE 0 END) AS completed " +
+           "FROM Task t " +
+           "GROUP BY FUNCTION('TRUNC', t.creationDate) " +
+           "ORDER BY FUNCTION('TRUNC', t.creationDate) ASC")
+    List<TaskByDate> getTasksGroupedByDate();
 }
