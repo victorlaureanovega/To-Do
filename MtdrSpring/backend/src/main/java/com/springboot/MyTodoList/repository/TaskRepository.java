@@ -68,11 +68,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<TaskTypeCount> getAllTasksByType(@Param("teamId") Long teamId);
 
     // Get all tasks grouped by creation date (Total vs Completed)
-    @Query("SELECT trunc(t.creationDate) AS taskDate, " +
+    @Query("SELECT cast(t.creationDate as taskDate), " +
            "COUNT(t.taskId) AS registered, " +
            "SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 ELSE 0 END) AS completed " +
            "FROM Task t " +
-           "GROUP BY trunc(t.creationDate) " +
-           "ORDER BY trunc(t.creationDate) ASC")
+           "GROUP BY cast(t.creationDate as taskDate)")
     List<TaskByDate> getTasksGroupedByDate();
 }
