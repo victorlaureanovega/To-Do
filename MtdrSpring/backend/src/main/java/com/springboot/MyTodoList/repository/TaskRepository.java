@@ -52,6 +52,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT " +
        "(COUNT(CASE WHEN t.everFinished = 1 AND t.taskStatus != 'Finalizada' THEN 1 END) * 1.0) / " +
        "NULLIF(COUNT(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 END), 0) " +
-       "FROM Task t")
+       "FROM Task t JOIN t.user u " + 
+       "WHERE u.team.teamId = :teamId")
     Float getReworkRateByTeam(@Param("teamId") Long teamId);
 }
