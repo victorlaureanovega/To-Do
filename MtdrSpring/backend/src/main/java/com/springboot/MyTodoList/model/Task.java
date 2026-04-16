@@ -51,14 +51,37 @@ public class Task {
     // Getters y Setters
     public Long getTaskId() { return taskId; }
     public void setTaskId(Long taskId) { this.taskId = taskId; }
+
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
     public TaskType getType() { return type; }
     public void setType(TaskType type) { this.type = type; }
+
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+
     public String getTaskStatus() { return taskStatus; }
     public void setTaskStatus(String taskStatus) { this.taskStatus = taskStatus; }
+
     public Integer getIsActive() { return isActive; }
     public void setIsActive(Integer isActive) { this.isActive = isActive; }
+
+    public Integer getEverFinished() { return everFinished; }
+    public void setEverFinished(Integer everFinished) { this.everFinished = everFinished; }
+
+    public LocalDateTime getCreationDate() { return creationDate; }
+    public void setCreationDate(LocalDateTime creationDate) { this.creationDate = creationDate; }
+
+    public Float getEstimatedDuration() { return estimatedDuration; }
+    public void setEstimatedDuration(Float estimatedDuration) { this.estimatedDuration = estimatedDuration; }
+
+    public java.sql.Date getFinishDate() { return finishDate; }
+    public void setFinishDate(java.sql.Date finishDate) { this.finishDate = finishDate; }
+
+    public Float getRealDuration() { return realDuration; }
+    public void setRealDuration(Float realDuration) { this.realDuration = realDuration; }
+
+    public Double getTotalHoursWorked() { return totalHoursWorked; }
+    public void setTotalHoursWorked(Double totalHoursWorked) { this.totalHoursWorked = totalHoursWorked; }
 }

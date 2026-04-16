@@ -7,14 +7,13 @@
 
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 import SectionCard from '../../../../components/common/SectionCard'
-
-const PIE_COLORS = ['#c74634', '#d7dee8']
+import { CHART_THEME, CHART_MESSAGE_STYLE, CHART_ERROR_STYLE } from '../../constants/chartTheme'
 
 export default function TeamCompletionChart({ data, isLoading, error }) {
 	if (error) {
 		return (
 			<SectionCard title="Team Completion Ratio">
-				<div style={{ padding: '20px', color: '#dc2626' }}>Error loading chart: {error.message}</div>
+				<div style={CHART_ERROR_STYLE}>Error loading chart: {error.message}</div>
 			</SectionCard>
 		)
 	}
@@ -22,7 +21,7 @@ export default function TeamCompletionChart({ data, isLoading, error }) {
 	if (isLoading) {
 		return (
 			<SectionCard title="Team Completion Ratio">
-				<div style={{ padding: '20px' }}>Loading...</div>
+				<div style={CHART_MESSAGE_STYLE}>Loading...</div>
 			</SectionCard>
 		)
 	}
@@ -40,14 +39,14 @@ export default function TeamCompletionChart({ data, isLoading, error }) {
 							outerRadius={105}
 							dataKey="value"
 							nameKey="name"
-							label
+							label={{ fill: CHART_THEME.pieLabel }}
 						>
 							{data.map((entry, index) => (
-								<Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+								<Cell key={entry.name} fill={CHART_THEME.teamCompletion[index % CHART_THEME.teamCompletion.length]} />
 							))}
 						</Pie>
-						<Tooltip />
-						<Legend />
+						<Tooltip contentStyle={CHART_THEME.tooltip.contentStyle} labelStyle={CHART_THEME.tooltip.labelStyle} itemStyle={CHART_THEME.tooltip.itemStyle} />
+						<Legend wrapperStyle={{ color: CHART_THEME.legendText }} />
 					</PieChart>
 				</ResponsiveContainer>
 			</div>

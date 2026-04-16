@@ -2,20 +2,103 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: 'Public Sans', 'Segoe UI', sans-serif;
-  background: radial-gradient(circle at 15% 15%, #f8fafc 0%, var(--bg-page) 35%, #e8edf4 100%);
+  font-family: var(--font-body);
+  background: var(--bg-page);
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
 }
 
 #root {
   min-height: 100vh;
+  position: relative;
+}
+
+.app-root {
+  min-height: 100vh;
+  position: relative;
+}
+
+.app-background-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-background-shape {
+  position: absolute;
+  border-radius: 28px;
+  filter: blur(2px);
+  opacity: 0.9;
+  border: 1px solid rgba(2, 117, 244, 0.58);
+  box-shadow: 0 0 0 1px rgba(2, 117, 244, 0.2), 0 24px 54px rgba(2, 117, 244, 0.22);
+}
+
+.app-background-shape--one {
+  width: min(48vw, 640px);
+  height: min(48vw, 640px);
+  left: -12vw;
+  top: -16vh;
+  transform: rotate(-14deg);
+  background:
+    linear-gradient(140deg, rgba(2, 117, 244, 0.56) 0%, rgba(2, 117, 244, 0.16) 72%);
+}
+
+.app-background-shape--two {
+  width: min(42vw, 560px);
+  height: min(42vw, 560px);
+  right: -8vw;
+  top: 14vh;
+  transform: rotate(11deg);
+  background:
+    linear-gradient(138deg, rgba(2, 117, 244, 0.5) 0%, rgba(2, 117, 244, 0.12) 70%);
+}
+
+.app-background-shape--three {
+  width: min(54vw, 720px);
+  height: min(54vw, 720px);
+  left: 18vw;
+  bottom: -28vh;
+  transform: rotate(-8deg);
+  background:
+    linear-gradient(145deg, rgba(2, 117, 244, 0.48) 0%, rgba(2, 117, 244, 0.1) 76%);
+}
+
+.app-background-tint {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(2, 117, 244, 0.12) 0%, rgba(2, 117, 244, 0) 42%),
+    radial-gradient(circle at 82% 26%, rgba(2, 117, 244, 0.12) 0%, rgba(2, 117, 244, 0) 46%),
+    rgba(3, 10, 24, 0.4);
+}
+
+.app-content-layer {
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 h1,
 h2,
 h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
 p {
   margin: 0;
 }
@@ -26,6 +109,8 @@ a {
 }
 
 button,
-select {
+select,
+input,
+textarea {
   font: inherit;
 }

@@ -1,22 +1,18 @@
-import { LogOut } from 'lucide-react'
-import { useAuth } from '../../hooks/useAuth'
+import { User } from 'lucide-react'
 
 export default function Topbar() {
-  const { user, role, logout } = useAuth()
-
   return (
     <header className="app-topbar">
       <div>
-        <p className="topbar-title">Project Management System</p>
-        <p className="topbar-subtitle">Microservices-ready frontend mock</p>
+        <p className="topbar-title">Task Flow</p>
+        <p className="topbar-subtitle">Welcome back, Ken Bauer.</p>
       </div>
 
       <div className="topbar-actions">
-        <span className="role-badge">{role}</span>
-        <span className="user-name">{user?.name}</span>
-        <button type="button" className="btn btn-ghost" onClick={logout}>
-          <LogOut size={16} />
-          Sign out
+        <span className="role-badge">Manager</span>
+        <button type="button" className="topbar-profile-btn" aria-label="Profile">
+          <User size={18} />
+          <span>Profile</span>
         </button>
       </div>
     </header>

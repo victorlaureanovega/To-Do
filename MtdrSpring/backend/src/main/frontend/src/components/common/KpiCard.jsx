@@ -10,7 +10,7 @@ import clsx from 'clsx'
  *   trend   – objeto opcional { value: string, direction: 'up'|'down'|'neutral' }
  *   accent  – 'default' | 'success' | 'warning' | 'danger'
  */
-export default function KpiCard({ label, value, icon: Icon, trend, accent = 'default' }) {
+export default function KpiCard({ label, value, icon: Icon, trend, accent = 'default', valueClassName }) {
   return (
     <article className={clsx('kpi-card', `kpi-card--${accent}`)}>
       <div className="kpi-card__header">
@@ -22,7 +22,7 @@ export default function KpiCard({ label, value, icon: Icon, trend, accent = 'def
         )}
       </div>
 
-      <div className="kpi-card__value">{value}</div>
+      <div className={clsx('kpi-card__value', valueClassName)}>{value}</div>
 
       {trend && (
         <p className={clsx('kpi-card__trend', `kpi-card__trend--${trend.direction}`)}>

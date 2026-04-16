@@ -1,4 +1,5 @@
 package com.springboot.MyTodoList.config;
+import com.springboot.MyTodoList.dto.TaskTypeCount;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
@@ -70,12 +71,18 @@ public class OracleConfiguration {
                         
                         if (usuario != null && usuario.getTeam() != null) {
                             Team equipo = usuario.getTeam();
+                            Float tasaRetrabajo = taskRepository.getReworkRateByTeam(equipo.getTeamId());
                             Float promedio = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
                             Float promedioTareas = taskRepository.getAverageFinishedTasksByTeam(equipo.getTeamId());
+                            List<TaskTypeCount> tasksByType = taskRepository.getAllTasksByType(equipo.getTeamId());
                             
                             System.out.println("Equipo: " + equipo.getName());
                             System.out.println("Promedio: " + (promedio != null ? promedio : 0.0f));
                             System.out.println("Promedio de tareas finalizadas del equipo: " + (promedioTareas != null ? promedioTareas : 0.0f));
+                            System.out.println("Tasa de retrabajo: " + tasaRetrabajo);
+                            for (TaskTypeCount t : tasksByType) {                              
+                                System.out.println("-> " + t.getTypeName() + ": " + t.getCount());
+                            }
                         }
                     }
                     

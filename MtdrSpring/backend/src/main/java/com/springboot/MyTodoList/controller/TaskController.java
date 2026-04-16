@@ -3,9 +3,10 @@ import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.Team;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
+import com.springboot.MyTodoList.dto.TaskTypeCount;
+import com.springboot.MyTodoList.dto.TaskByDate;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -15,11 +16,16 @@ public class TaskController {
     @Autowired
     private TaskRepository taskRepository;
 
-
     // Obtener todas las tareas en la base de datos
     @GetMapping
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
+    }
+
+    // Obtener todas las tareas agrupadas por tipos
+    @GetMapping("/by-type/by-team/{teamId}")
+    public List<TaskTypeCount> getAllTasksByType(@PathVariable Long teamId) {
+        return taskRepository.getAllTasksByType(teamId);
     }
 
     // Obtener todas las tareas de un usuario específico
@@ -52,5 +58,18 @@ public class TaskController {
     @GetMapping("/hours/by-developer/{developerId}")
     public DeveloperHours getHoursByDeveloper(@PathVariable Long developerId) {
         return taskRepository.getDeveloperHours(developerId);
+    }
+
+    // Obtener la tasa de retrabajo
+    @GetMapping("/rework-rate/by-team/{teamId}")
+    public Float getReworkRateByTeam(@PathVariable Long teamId) {
+        Float rate = taskRepository.getReworkRateByTeam(teamId);
+
+        return rate;
+    }
+
+    @GetMapping("/grouped-by-date")
+    public List<TaskByDate> getTasksGroupedByDate() {
+        return taskRepository.getTasksGroupedByDate();
     }
 }

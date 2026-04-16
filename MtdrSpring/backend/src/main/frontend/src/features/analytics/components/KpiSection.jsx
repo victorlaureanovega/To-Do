@@ -12,8 +12,12 @@ export default function KpiSection({
 	averageCompletionTime,
 	completionRate,
 	completionVsRegistered,
+	completionRateLoading,
+	completionRateError,
 	statusTotals,
-	reopenedByTypePercentages,
+	reopenedTaskRate,
+	reopenedTaskRateLoading,
+	reopenedTaskRateError,
 }) {
 	return (
 		<div className="kpi-grid kpi-grid--4">
@@ -49,35 +53,29 @@ export default function KpiSection({
 			/>
 			<KpiCard
 				label="Task completion rate"
-				value={completionRate}
+				value={completionRateLoading ? 'Loading...' : completionRateError ? 'N/A' : completionRate}
 				icon={CheckCircle2}
 				accent="success"
-				trend={{ value: `${completionVsRegistered} completed vs total`, direction: 'up' }}
+				trend={{
+					value: completionRateError?.message ?? `${completionVsRegistered} completed vs total`,
+					direction: completionRateError ? 'neutral' : 'up',
+				}}
 			/>
 			<KpiCard
-				label="Reopened tasks by type"
+				label="Reopened Task Rate"
 				value={
-					<div className="kpi-card__value-list">
-						<div className="kpi-card__value-item kpi-card__value-item--bug">
-							<strong>Bug</strong>
-							<span>{reopenedByTypePercentages.bug.toFixed(1)}%</span>
-						</div>
-						<div className="kpi-card__value-item kpi-card__value-item--feature">
-							<strong>Feature</strong>
-							<span>{reopenedByTypePercentages.feature.toFixed(1)}%</span>
-						</div>
-						<div className="kpi-card__value-item kpi-card__value-item--research">
-							<strong>Research</strong>
-							<span>{reopenedByTypePercentages.research.toFixed(1)}%</span>
-						</div>
-						<div className="kpi-card__value-item kpi-card__value-item--documentation">
-							<strong>Documentation</strong>
-							<span>{reopenedByTypePercentages.documentation.toFixed(1)}%</span>
-						</div>
-					</div>
+					reopenedTaskRateLoading
+						? 'Loading...'
+						: reopenedTaskRateError
+							? 'N/A'
+							: `${Number(reopenedTaskRate ?? 0).toFixed(1)}%`
 				}
 				icon={RotateCcw}
 				accent="danger"
+				trend={{
+					value: reopenedTaskRateError?.message ?? 'Team-wide rework rate',
+					direction: 'neutral',
+				}}
 			/>
 		</div>
 	)

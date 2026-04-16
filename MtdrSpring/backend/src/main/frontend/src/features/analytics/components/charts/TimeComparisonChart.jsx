@@ -9,6 +9,9 @@
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import SectionCard from '../../../../components/common/SectionCard'
+import { CHART_THEME, CHART_MESSAGE_STYLE, CHART_ERROR_STYLE } from '../../constants/chartTheme'
+import { useData } from '../../../../hooks/useData'
+import { fetchTeamDevelopers } from '../../../../utils/teamApi'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -35,7 +38,8 @@ const toStackedRow = (developerLabel, estimatedHours, realHours) => {
 	}
 }
 
-export default function TimeComparisonChart({ data, isLoading, error, renderTooltip }) {
+export default function TimeComparisonChart({ data: _data, isLoading, error, renderTooltip, selectedDeveloperId = 'all' }) {
+	const { teamId } = useData()
 	const [backendData, setBackendData] = useState([])
 	const [backendLoading, setBackendLoading] = useState(false)
 	const [backendError, setBackendError] = useState(null)
@@ -48,27 +52,14 @@ export default function TimeComparisonChart({ data, isLoading, error, renderTool
 			setBackendError(null)
 
 			try {
-				const usersEndpoint = apiBaseUrl ? `${apiBaseUrl}/api/users` : '/api/users'
-				const usersResponse = await fetch(usersEndpoint, {
-					method: 'GET',
-					headers: { Accept: 'application/json' },
-				})
-
-				if (!usersResponse.ok) {
-					throw new Error(`Backend responded ${usersResponse.status} ${usersResponse.statusText}`)
-				}
-
-				const users = await usersResponse.json()
-				const developers = Array.isArray(users)
-					? users.filter((user) => {
-						const role = String(user?.role ?? '').toLowerCase()
-						if (!role) return true
-						return role === 'developer'
-					})
-					: []
+				const developers = await fetchTeamDevelopers(apiBaseUrl, teamId)
+				const scopedDevelopers =
+					selectedDeveloperId === 'all'
+						? developers
+						: developers.filter((developer) => String(developer?.userId ?? '') === String(selectedDeveloperId))
 
 				const settled = await Promise.allSettled(
-					developers.map(async (developer) => {
+					scopedDevelopers.map(async (developer) => {
 						const developerId = developer?.userId
 						const endpoint = apiBaseUrl
 							? `${apiBaseUrl}/api/tasks/hours/by-developer/${developerId}`
@@ -114,7 +105,7 @@ export default function TimeComparisonChart({ data, isLoading, error, renderTool
 		return () => {
 			isCancelled = true
 		}
-	}, [])
+	}, [teamId, selectedDeveloperId])
 
 	const effectiveError = backendError ?? error
 	const effectiveLoading = backendLoading || isLoading
@@ -123,7 +114,7 @@ export default function TimeComparisonChart({ data, isLoading, error, renderTool
 	if (effectiveError) {
 		return (
 			<SectionCard title="Estimated vs Real Time by Developer">
-				<div style={{ padding: '20px', color: '#dc2626' }}>Error loading chart: {effectiveError.message}</div>
+				<div style={CHART_ERROR_STYLE}>Error loading chart: {effectiveError.message}</div>
 			</SectionCard>
 		)
 	}
@@ -131,7 +122,7 @@ export default function TimeComparisonChart({ data, isLoading, error, renderTool
 	if (effectiveLoading) {
 		return (
 			<SectionCard title="Estimated vs Real Time by Developer">
-				<div style={{ padding: '20px' }}>Loading...</div>
+				<div style={CHART_MESSAGE_STYLE}>Loading...</div>
 			</SectionCard>
 		)
 	}
@@ -141,15 +132,15 @@ export default function TimeComparisonChart({ data, isLoading, error, renderTool
 			<div className="chart-box">
 				<ResponsiveContainer width="100%" height={290}>
 					<BarChart data={chartData}>
-						<CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-						<XAxis dataKey="developer" />
-						<YAxis />
-						<Tooltip content={renderTooltip} />
-						<Legend />
-						<Bar dataKey="estimatedLower" stackId="time" fill="#2f4158" name="Estimated (h)" />
-						<Bar dataKey="realLower" stackId="time" fill="#c74634" name="Real (h)" />
-						<Bar dataKey="estimatedUpper" stackId="time" fill="#2f4158" legendType="none" radius={[4, 4, 0, 0]} />
-						<Bar dataKey="realUpper" stackId="time" fill="#c74634" legendType="none" radius={[4, 4, 0, 0]} />
+						<CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.gridStroke} />
+						<XAxis dataKey="developer" stroke={CHART_THEME.axisStroke} tick={{ fill: CHART_THEME.axisTick }} tickLine={{ stroke: CHART_THEME.axisStroke }} axisLine={{ stroke: CHART_THEME.axisStroke }} />
+						<YAxis stroke={CHART_THEME.axisStroke} tick={{ fill: CHART_THEME.axisTick }} tickLine={{ stroke: CHART_THEME.axisStroke }} axisLine={{ stroke: CHART_THEME.axisStroke }} />
+						<Tooltip content={renderTooltip} contentStyle={CHART_THEME.tooltip.contentStyle} labelStyle={CHART_THEME.tooltip.labelStyle} itemStyle={CHART_THEME.tooltip.itemStyle} />
+						<Legend wrapperStyle={{ color: CHART_THEME.legendText }} />
+						<Bar dataKey="estimatedLower" stackId="time" fill={CHART_THEME.timeComparison.estimated} name="Estimated (h)" />
+						<Bar dataKey="realLower" stackId="time" fill={CHART_THEME.timeComparison.real} name="Real (h)" />
+						<Bar dataKey="estimatedUpper" stackId="time" fill={CHART_THEME.timeComparison.estimated} legendType="none" radius={[4, 4, 0, 0]} />
+						<Bar dataKey="realUpper" stackId="time" fill={CHART_THEME.timeComparison.real} legendType="none" radius={[4, 4, 0, 0]} />
 					</BarChart>
 				</ResponsiveContainer>
 			</div>
