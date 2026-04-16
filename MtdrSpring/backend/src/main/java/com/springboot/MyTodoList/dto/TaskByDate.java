@@ -1,9 +1,9 @@
 package com.springboot.MyTodoList.dto;
 
-import java.util.Date;
+import java.time.LocalDate;
 
 public interface TaskByDate {
-    Date getDate();
-    int getRegistered();
-    int getCompleted();
+    LocalDate getTaskDate();
+    Integer getRegistered();
+    Integer getCompleted();
 }

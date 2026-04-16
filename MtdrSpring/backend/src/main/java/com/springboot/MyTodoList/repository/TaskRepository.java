@@ -46,7 +46,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "FROM Team tm WHERE tm.teamId = :teamId")
     Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
 
-   // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
+    // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
     @Query("SELECT COALESCE(SUM(t.estimatedDuration), 0.0) AS totalEstimatedHours, " +
            "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
            "FROM Task t WHERE t.user.userId = :developerId")
@@ -66,12 +66,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "JOIN t.user u " + "WHERE u.team.teamId = :teamId " +
        "GROUP BY tt.name")
     List<TaskTypeCount> getAllTasksByType(@Param("teamId") Long teamId);
+
     // Get all tasks grouped by creation date (Total vs Completed)
-    @Query("SELECT FUNCTION('TRUNC', t.creationDate) AS date, " +
+    @Query("SELECT trunc(t.creationDate) AS taskDate, " +
            "COUNT(t.taskId) AS registered, " +
            "SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 ELSE 0 END) AS completed " +
            "FROM Task t " +
-           "GROUP BY FUNCTION('TRUNC', t.creationDate) " +
-           "ORDER BY FUNCTION('TRUNC', t.creationDate) ASC")
+           "GROUP BY trunc(t.creationDate) " +
+           "ORDER BY trunc(t.creationDate) ASC")
     List<TaskByDate> getTasksGroupedByDate();
 }
