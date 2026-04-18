@@ -1,6 +1,5 @@
 package com.springboot.MyTodoList.config;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
-import com.springboot.MyTodoList.dto.TaskByDate;
 import com.springboot.MyTodoList.model.*;
 import com.springboot.MyTodoList.repository.*;
 import oracle.jdbc.pool.OracleDataSource;
@@ -46,72 +45,54 @@ public class OracleConfiguration {
             System.out.println("============================================\n");
 
             try (java.sql.Connection conn = ds.getConnection()) {
-                // 1. Conexión Básica
                 System.out.println("[OK] JDBC: Conexión establecida con éxito.");
-                System.out.println("[INFO] Usuario DB: " + conn.getMetaData().getUserName());
 
-                // 2. Prueba de Inserción
+                // --- PRUEBA 1: INSERCIÓN ---
                 System.out.println("\n--- PRUEBA 1: INSERCIÓN DE TAREA ---");
                 User dev = userRepository.findAll().stream().findFirst().orElse(null);
                 TaskType tipo = taskTypeRepository.findAll().stream().findFirst().orElse(null);
                 Sprint sprint = sprintRepository.findAll().stream().findFirst().orElse(null);
+                
+                Task tareaParaEditar = null;
 
                 if (dev != null && tipo != null) {
                     Task nuevaTarea = new Task();
-                    nuevaTarea.setContent("Tarea de prueba: Validar integración con Sprint");
-                    nuevaTarea.setEstimatedDuration(3.5f);
+                    nuevaTarea.setContent("Tarea original antes de editar");
+                    nuevaTarea.setEstimatedDuration(1.0f);
                     nuevaTarea.setUser(dev);
                     nuevaTarea.setType(tipo);
-                    nuevaTarea.setSprint(sprint); // Puede ser null
+                    nuevaTarea.setSprint(sprint);
                     nuevaTarea.setTaskStatus("Pendiente");
-                    nuevaTarea.setIsActive(1);
                     
-                    Task guardada = taskRepository.save(nuevaTarea);
-                    System.out.println("[ÉXITO] Tarea creada con ID: " + guardada.getTaskId());
-                } else {
-                    System.out.println("[WARN] No hay datos maestros (User/Type) para crear una tarea.");
+                    tareaParaEditar = taskRepository.save(nuevaTarea);
+                    System.out.println("[ÉXITO] Tarea creada para prueba de edición. ID: " + tareaParaEditar.getTaskId());
                 }
 
-                // 3. Prueba de Lectura y Filtrado
-                System.out.println("\n--- PRUEBA 2: LECTURA Y FILTRADO JPA ---");
-                List<Task> allTasks = taskRepository.findAll();
-                
-                if (!allTasks.isEmpty()) {
-                    System.out.println("[OK] Se encontraron " + allTasks.size() + " tareas en total.");
+                // --- PRUEBA: EDICIÓN ---
+                System.out.println("\n--- PRUEBA 4: EDICIÓN DE TAREA ---");
+                if (tareaParaEditar != null) {
+                    Long id = tareaParaEditar.getTaskId();
                     
-                    // Usamos la primera tarea para probar relaciones
-                    Task sampleTask = allTasks.get(0);
-                    User user = sampleTask.getUser();
+                    // Simulamos la edición buscando la tarea de nuevo
+                    Task taskExistente = taskRepository.findById(id).get();
                     
-                    if (user != null) {
-                        System.out.println("[INFO] Filtrando tareas para el usuario: " + user.getUsername());
-                        List<Task> userTasks = taskRepository.findByUser(user);
-                        System.out.println("[OK] El usuario tiene " + userTasks.size() + " tareas asignadas.");
-                        
-                        // 4. Estadísticas del Equipo
-                        if (user.getTeam() != null) {
-                            Team equipo = user.getTeam();
-                            System.out.println("\n--- PRUEBA 3: ESTADÍSTICAS DE EQUIPO (" + equipo.getName() + ") ---");
-                            
-                            Float promedioHoras = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
-                            Float promedioFinalizadas = taskRepository.getAverageFinishedTasksByTeam(equipo.getTeamId());
-                            Float retrabajo = taskRepository.getReworkRateByTeam(equipo.getTeamId());
-                            List<TaskTypeCount> counts = taskRepository.getAllTasksByType(equipo.getTeamId());
-
-                            System.out.println("-> Promedio Horas/Miembro: " + (promedioHoras != null ? promedioHoras : 0.0f));
-                            System.out.println("-> Promedio Tareas Finalizadas: " + (promedioFinalizadas != null ? promedioFinalizadas : 0.0f));
-                            System.out.println("-> Tasa de Retrabajo: " + (retrabajo != null ? retrabajo : "0.0"));
-                            System.out.println("-> Tareas por tipo:");
-                            counts.forEach(c -> System.out.println("   - " + c.getTypeName() + ": " + c.getCount()));
-                        }
-                    }
+                    System.out.println("[INFO] Modificando tarea ID: " + id);
+                    taskExistente.setContent("CONTENIDO ACTUALIZADO: " + taskExistente.getContent());
+                    taskExistente.setTaskStatus("En curso");
+                    taskExistente.setRealDuration(1.5f);
+                    
+                    Task actualizada = taskRepository.save(taskExistente);
+                    
+                    System.out.println("[OK] Tarea actualizada correctamente.");
+                    System.out.println("     Nuevo Contenido: " + actualizada.getContent());
+                    System.out.println("     Nuevo Estado: " + actualizada.getTaskStatus());
+                    System.out.println("     Duración Real: " + actualizada.getRealDuration());
                 } else {
-                    System.out.println("[INFO] La tabla de tareas está vacía.");
+                    System.out.println("[WARN] No se pudo probar la edición porque no se creó la tarea inicial.");
                 }
 
             } catch (Exception e) {
-                System.err.println("\n[ERROR FATAL] La prueba falló:");
-                System.err.println("Mensaje: " + e.getMessage());
+                System.err.println("\n[ERROR FATAL] La prueba falló: " + e.getMessage());
                 e.printStackTrace();
             }
 

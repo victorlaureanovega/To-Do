@@ -106,4 +106,55 @@ public class TaskController {
 
         return taskRepository.save(task);
     }
+
+    // Editar tarea
+    @PutMapping("/{id}")
+    public Task updateTask(@PathVariable Long id, @RequestBody TaskRequestDTO dto) {
+        // Buscar la tarea existente
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Tarea no encontrada con ID: " + id));
+
+        // Actualizar campos básicos
+        task.setContent(dto.getContent());
+        task.setEstimatedDuration(dto.getEstimatedDuration());
+
+        // Actualizar relaciones (sólo si los IDs vienen en el DTO)
+        if (dto.getUserId() != null) {
+            task.setUser(userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
+        }
+        
+        if (dto.getTypeId() != null) {
+            task.setType(taskTypeRepository.findById(dto.getTypeId())
+                .orElseThrow(() -> new RuntimeException("Tipo de tarea no encontrado")));
+        }
+
+        // El Sprint puede ser null (si se mueve al backlog) o un ID nuevo
+        if (dto.getSprintId() != null) {
+            task.setSprint(sprintRepository.findById(dto.getSprintId())
+                .orElseThrow(() -> new RuntimeException("Sprint no encontrado")));
+        } else {
+            task.setSprint(null);
+        }
+
+        // Guardar cambios
+        return taskRepository.save(task);
+    }
+
+    // Editar estado de una tarea
+    @PatchMapping("/status/{id}")
+    public Task updateTaskStatus(@PathVariable Long id, @RequestParam String status) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
+
+        task.setTaskStatus(status);
+
+        // Si el estado es 'Finalizada' se pone la fecha actual
+        if ("Finalizada".equalsIgnoreCase(status)) {
+            task.setFinishDate(new java.sql.Date(System.currentTimeMillis()));
+            task.setEverFinished(1);
+        }
+
+        return taskRepository.save(task);
+    }
 }
