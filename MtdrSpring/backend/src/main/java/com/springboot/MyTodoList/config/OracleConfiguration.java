@@ -1,9 +1,8 @@
 package com.springboot.MyTodoList.config;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
-import com.springboot.MyTodoList.model.Task;
-import com.springboot.MyTodoList.model.Team;
-import com.springboot.MyTodoList.model.User;
-import com.springboot.MyTodoList.repository.TaskRepository;
+import com.springboot.MyTodoList.dto.TaskByDate;
+import com.springboot.MyTodoList.model.*;
+import com.springboot.MyTodoList.repository.*;
 import oracle.jdbc.pool.OracleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.List;
@@ -33,73 +33,91 @@ public class OracleConfiguration {
     }
 
     @Bean
-    public org.springframework.boot.CommandLineRunner connectionChecker(DataSource ds, TaskRepository taskRepository) {
+    public org.springframework.boot.CommandLineRunner connectionChecker(
+            DataSource ds, 
+            TaskRepository taskRepository,
+            UserRepository userRepository,
+            TaskTypeRepository taskTypeRepository,
+            SprintRepository sprintRepository) {
+        
         return args -> {
-            System.out.println("\n--- PRUEBA DE CONEXIÓN Y LECTURA ---");
-            
-            // 1. Probar Conexión JDBC
+            System.out.println("\n============================================");
+            System.out.println("   INICIANDO PRUEBAS DE SISTEMA (ORACLE)    ");
+            System.out.println("============================================\n");
+
             try (java.sql.Connection conn = ds.getConnection()) {
-                System.out.println("Conexión JDBC exitosa");
-                System.out.println("Usuario: " + conn.getMetaData().getUserName());
-                
-                // 2. Probar Lectura de Datos (JPA)
-                System.out.println("Buscando tareas en APP_USER.TASK...");
-                List<Task> tasks = taskRepository.findAll();
-                
-                if (tasks.isEmpty()) {
-                    System.out.println("Conexión OK, pero la tabla está vacía. Verificar INSERTS.");
+                // 1. Conexión Básica
+                System.out.println("[OK] JDBC: Conexión establecida con éxito.");
+                System.out.println("[INFO] Usuario DB: " + conn.getMetaData().getUserName());
+
+                // 2. Prueba de Inserción
+                System.out.println("\n--- PRUEBA 1: INSERCIÓN DE TAREA ---");
+                User dev = userRepository.findAll().stream().findFirst().orElse(null);
+                TaskType tipo = taskTypeRepository.findAll().stream().findFirst().orElse(null);
+                Sprint sprint = sprintRepository.findAll().stream().findFirst().orElse(null);
+
+                if (dev != null && tipo != null) {
+                    Task nuevaTarea = new Task();
+                    nuevaTarea.setContent("Tarea de prueba: Validar integración con Sprint");
+                    nuevaTarea.setEstimatedDuration(3.5f);
+                    nuevaTarea.setUser(dev);
+                    nuevaTarea.setType(tipo);
+                    nuevaTarea.setSprint(sprint); // Puede ser null
+                    nuevaTarea.setTaskStatus("Pendiente");
+                    nuevaTarea.setIsActive(1);
+                    
+                    Task guardada = taskRepository.save(nuevaTarea);
+                    System.out.println("[ÉXITO] Tarea creada con ID: " + guardada.getTaskId());
                 } else {
-                    System.out.println("LECTURA EXITOSA. Tareas encontradas:");
-                    // --- PRUEBA ESPECÍFICA DE FILTRADO POR USUARIO ---
-                    System.out.println("\nBuscando por filtro...");
-                    
-                    // Tomamos el primer usuario que aparezca en las tareas para probar
-                    User usuarioDePrueba = tasks.get(1).getUser(); 
-                    Long idParaProbar = usuarioDePrueba.getUserId();
-                    
-                    System.out.println("Buscando tareas para el usuario ID: " + idParaProbar + " (" + usuarioDePrueba.getUsername() + ")");
-                    
-                    // Aquí es donde probamos el método del repositorio
-                    List<Task> tareasFiltradas = taskRepository.findByUser(usuarioDePrueba);
+                    System.out.println("[WARN] No hay datos maestros (User/Type) para crear una tarea.");
+                }
 
-                    List<Task> tareas = taskRepository.findAll();
-
-                    if (!tareas.isEmpty()) {
-                        // Usa el índice 0 para ir a lo seguro
-                        Task primeraTarea = tasks.get(0); 
-                        User usuario = primeraTarea.getUser();
+                // 3. Prueba de Lectura y Filtrado
+                System.out.println("\n--- PRUEBA 2: LECTURA Y FILTRADO JPA ---");
+                List<Task> allTasks = taskRepository.findAll();
+                
+                if (!allTasks.isEmpty()) {
+                    System.out.println("[OK] Se encontraron " + allTasks.size() + " tareas en total.");
+                    
+                    // Usamos la primera tarea para probar relaciones
+                    Task sampleTask = allTasks.get(0);
+                    User user = sampleTask.getUser();
+                    
+                    if (user != null) {
+                        System.out.println("[INFO] Filtrando tareas para el usuario: " + user.getUsername());
+                        List<Task> userTasks = taskRepository.findByUser(user);
+                        System.out.println("[OK] El usuario tiene " + userTasks.size() + " tareas asignadas.");
                         
-                        if (usuario != null && usuario.getTeam() != null) {
-                            Team equipo = usuario.getTeam();
-                            Float tasaRetrabajo = taskRepository.getReworkRateByTeam(equipo.getTeamId());
-                            Float promedio = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
-                            Float promedioTareas = taskRepository.getAverageFinishedTasksByTeam(equipo.getTeamId());
-                            List<TaskTypeCount> tasksByType = taskRepository.getAllTasksByType(equipo.getTeamId());
+                        // 4. Estadísticas del Equipo
+                        if (user.getTeam() != null) {
+                            Team equipo = user.getTeam();
+                            System.out.println("\n--- PRUEBA 3: ESTADÍSTICAS DE EQUIPO (" + equipo.getName() + ") ---");
                             
-                            System.out.println("Equipo: " + equipo.getName());
-                            System.out.println("Promedio: " + (promedio != null ? promedio : 0.0f));
-                            System.out.println("Promedio de tareas finalizadas del equipo: " + (promedioTareas != null ? promedioTareas : 0.0f));
-                            System.out.println("Tasa de retrabajo: " + tasaRetrabajo);
-                            for (TaskTypeCount t : tasksByType) {                              
-                                System.out.println("-> " + t.getTypeName() + ": " + t.getCount());
-                            }
+                            Float promedioHoras = taskRepository.getAverageWorkedHoursByTeam(equipo.getTeamId());
+                            Float promedioFinalizadas = taskRepository.getAverageFinishedTasksByTeam(equipo.getTeamId());
+                            Float retrabajo = taskRepository.getReworkRateByTeam(equipo.getTeamId());
+                            List<TaskTypeCount> counts = taskRepository.getAllTasksByType(equipo.getTeamId());
+
+                            System.out.println("-> Promedio Horas/Miembro: " + (promedioHoras != null ? promedioHoras : 0.0f));
+                            System.out.println("-> Promedio Tareas Finalizadas: " + (promedioFinalizadas != null ? promedioFinalizadas : 0.0f));
+                            System.out.println("-> Tasa de Retrabajo: " + (retrabajo != null ? retrabajo : "0.0"));
+                            System.out.println("-> Tareas por tipo:");
+                            counts.forEach(c -> System.out.println("   - " + c.getTypeName() + ": " + c.getCount()));
                         }
                     }
-                    
-                    System.out.println("Se encontraron " + tareasFiltradas.size() + " tareas para este usuario.");
-                    for (Task tf : tareasFiltradas) {
-                        System.out.println("   -> Tarea: " + tf.getContent());
-                    }
+                } else {
+                    System.out.println("[INFO] La tabla de tareas está vacía.");
                 }
-                
+
             } catch (Exception e) {
-                System.err.println("ERROR EN LA PRUEBA:");
-                System.err.println("Causa: " + e.getMessage());
-                // Si el error dice "Table not found", es probable que el esquema APP_USER no sea el default
+                System.err.println("\n[ERROR FATAL] La prueba falló:");
+                System.err.println("Mensaje: " + e.getMessage());
                 e.printStackTrace();
             }
-            
-            System.out.println("--- FIN DE LA PRUEBA ---\n");
+
+            System.out.println("\n============================================");
+            System.out.println("        FIN DE LAS PRUEBAS DE SISTEMA       ");
+            System.out.println("============================================\n");
         };
     }
 }

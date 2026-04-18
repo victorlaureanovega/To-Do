@@ -5,7 +5,11 @@ import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
 import com.springboot.MyTodoList.dto.TaskByDate;
+import com.springboot.MyTodoList.dto.TaskRequestDTO;
+import com.springboot.MyTodoList.repository.SprintRepository;
 import com.springboot.MyTodoList.repository.TaskRepository;
+import com.springboot.MyTodoList.repository.TaskTypeRepository;
+import com.springboot.MyTodoList.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -15,6 +19,12 @@ import java.util.List;
 public class TaskController {
     @Autowired
     private TaskRepository taskRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private TaskTypeRepository taskTypeRepository;
+    @Autowired
+    private SprintRepository sprintRepository;
 
     // Obtener todas las tareas en la base de datos
     @GetMapping
@@ -68,8 +78,32 @@ public class TaskController {
         return rate;
     }
 
+    // Obtener las tareas que fueron creadas en cierto día y su relación con las que fueron finalizadas
     @GetMapping("/grouped-by-date")
     public List<TaskByDate> getTasksGroupedByDate() {
         return taskRepository.getTasksGroupedByDate();
+    }
+
+    // Crear tarea
+    @PostMapping
+    public Task createTask(@RequestBody TaskRequestDTO dto) {
+        Task task = new Task();
+        task.setContent(dto.getContent());
+        task.setEstimatedDuration(dto.getEstimatedDuration());
+        
+        // Buscar las entidades por ID
+        task.setUser(userRepository.findById(dto.getUserId())
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado")));
+        
+        task.setType(taskTypeRepository.findById(dto.getTypeId())
+            .orElseThrow(() -> new RuntimeException("Tipo de tarea no encontrado")));
+        
+        // El sprint es opcional (puede ser null para el Backlog)
+        if (dto.getSprintId() != null) {
+            task.setSprint(sprintRepository.findById(dto.getSprintId())
+                .orElseThrow(() -> new RuntimeException("Sprint no encontrado")));
+        }
+
+        return taskRepository.save(task);
     }
 }

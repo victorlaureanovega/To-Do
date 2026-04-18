@@ -3,8 +3,6 @@ import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
-
-import org.checkerframework.checker.units.qual.t;
 import com.springboot.MyTodoList.dto.TaskByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

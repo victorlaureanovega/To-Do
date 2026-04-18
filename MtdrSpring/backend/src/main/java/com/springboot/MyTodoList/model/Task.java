@@ -46,6 +46,10 @@ public class Task {
     @Column(name = "isActive")
     private Integer isActive = 1;
 
+    @ManyToOne
+    @JoinColumn(name = "sprintId") // Sin 'nullable = false' para permitir tareas en el Backlog
+    private Sprint sprint;
+
     public Task() {}
 
     // Getters y Setters
@@ -84,4 +88,7 @@ public class Task {
 
     public Double getTotalHoursWorked() { return totalHoursWorked; }
     public void setTotalHoursWorked(Double totalHoursWorked) { this.totalHoursWorked = totalHoursWorked; }
+
+    public Sprint getSprint() { return sprint; }
+    public void setSprint(Sprint sprint) { this.sprint = sprint; }
 }
