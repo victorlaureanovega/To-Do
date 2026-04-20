@@ -1,8 +1,6 @@
 package com.springboot.MyTodoList.util;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.generics.TelegramClient;

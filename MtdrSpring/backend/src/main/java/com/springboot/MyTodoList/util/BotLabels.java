@@ -1,7 +1,6 @@
 package com.springboot.MyTodoList.util;
 
 public enum BotLabels {
-	
 	SHOW_MAIN_SCREEN("Show Main Screen"), 
 	HIDE_MAIN_SCREEN("Hide Main Screen"),
 	LIST_ALL_ITEMS("List All Items"), 

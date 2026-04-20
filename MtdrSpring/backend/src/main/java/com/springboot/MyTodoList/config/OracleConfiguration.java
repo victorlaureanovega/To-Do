@@ -64,12 +64,13 @@ public class OracleConfiguration {
                     nuevaTarea.setSprint(sprint);
                     nuevaTarea.setTaskStatus("Pendiente");
                     
-                    tareaParaEditar = taskRepository.save(nuevaTarea);
-                    System.out.println("[ÉXITO] Tarea creada para prueba de edición. ID: " + tareaParaEditar.getTaskId());
+                    //tareaParaEditar = taskRepository.save(nuevaTarea);
+                    //System.out.println("[ÉXITO] Tarea creada para prueba de edición. ID: " + tareaParaEditar.getTaskId());
                 }
 
                 // --- PRUEBA: EDICIÓN ---
                 System.out.println("\n--- PRUEBA 4: EDICIÓN DE TAREA ---");
+                /*
                 if (tareaParaEditar != null) {
                     Long id = tareaParaEditar.getTaskId();
                     
@@ -89,7 +90,7 @@ public class OracleConfiguration {
                     System.out.println("     Duración Real: " + actualizada.getRealDuration());
                 } else {
                     System.out.println("[WARN] No se pudo probar la edición porque no se creó la tarea inicial.");
-                }
+                }*/
 
             } catch (Exception e) {
                 System.err.println("\n[ERROR FATAL] La prueba falló: " + e.getMessage());

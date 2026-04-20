@@ -5,7 +5,7 @@ import com.springboot.MyTodoList.model.User;
 import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
 import com.springboot.MyTodoList.dto.TaskByDate;
-import com.springboot.MyTodoList.dto.TaskRequestDTO;
+import com.springboot.MyTodoList.dto.TaskRequest;
 import com.springboot.MyTodoList.repository.SprintRepository;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import com.springboot.MyTodoList.repository.TaskTypeRepository;
@@ -86,7 +86,7 @@ public class TaskController {
 
     // Crear tarea
     @PostMapping
-    public Task createTask(@RequestBody TaskRequestDTO dto) {
+    public Task createTask(@RequestBody TaskRequest dto) {
         Task task = new Task();
         task.setContent(dto.getContent());
         task.setEstimatedDuration(dto.getEstimatedDuration());
@@ -109,7 +109,7 @@ public class TaskController {
 
     // Editar tarea
     @PutMapping("/{id}")
-    public Task updateTask(@PathVariable Long id, @RequestBody TaskRequestDTO dto) {
+    public Task updateTask(@PathVariable Long id, @RequestBody TaskRequest dto) {
         // Buscar la tarea existente
         Task task = taskRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Tarea no encontrada con ID: " + id));
