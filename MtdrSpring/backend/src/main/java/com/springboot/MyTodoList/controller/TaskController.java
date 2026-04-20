@@ -11,6 +11,7 @@ import com.springboot.MyTodoList.repository.TaskRepository;
 import com.springboot.MyTodoList.repository.TaskTypeRepository;
 import com.springboot.MyTodoList.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -156,5 +157,12 @@ public class TaskController {
         }
 
         return taskRepository.save(task);
+    }
+
+    // Eliminar tarea
+    @PatchMapping("/delete/{taskId}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
+        taskRepository.deleteTask(taskId);
+        return ResponseEntity.noContent().build();
     }
 }

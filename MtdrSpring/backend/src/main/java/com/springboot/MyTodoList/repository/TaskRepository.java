@@ -1,10 +1,14 @@
 package com.springboot.MyTodoList.repository;
 import com.springboot.MyTodoList.model.Task;
 import com.springboot.MyTodoList.model.User;
+
+import jakarta.transaction.Transactional;
+
 import com.springboot.MyTodoList.dto.DeveloperHours;
 import com.springboot.MyTodoList.dto.TaskTypeCount;
 import com.springboot.MyTodoList.dto.TaskByDate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -72,4 +76,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "FROM Task t " +
            "GROUP BY trunc(t.creationDate)", nativeQuery = true)
     List<TaskByDate> getTasksGroupedByDate();
+
+    // Eliminar una tarea
+    @Modifying
+    @Transactional
+    @Query("UPDATE Task t SET t.isActive = 0 WHERE t.taskId = :taskId")
+    void deleteTask(@Param("taskId") Long taskId);
 }
