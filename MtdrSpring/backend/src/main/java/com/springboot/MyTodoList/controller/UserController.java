@@ -71,4 +71,12 @@ public class UserController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    // Obtener un usuario por su username
+    @GetMapping("/get-by-username/{username}")
+    public ResponseEntity<User> getUserByUsername(@PathVariable String username) {
+        return userRepository.findByUsername(username)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
