@@ -23,6 +23,7 @@ export function useForm(initialValues, onSubmit) {
 	const [errors, setErrors] = useState({})
 	const [touched, setTouched] = useState({})
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [submitError, setSubmitError] = useState(null)
 
 	const handleChange = useCallback((e) => {
 		const { name, value } = e.target
@@ -30,6 +31,7 @@ export function useForm(initialValues, onSubmit) {
 			...prev,
 			[name]: value,
 		}))
+		setSubmitError(null)
 		// Clear error for this field on change
 		if (errors[name]) {
 			setErrors((prev) => ({
@@ -51,6 +53,7 @@ export function useForm(initialValues, onSubmit) {
 		async (e) => {
 			e.preventDefault()
 			setIsSubmitting(true)
+			setSubmitError(null)
 
 			try {
 				await onSubmit(values)
@@ -59,7 +62,8 @@ export function useForm(initialValues, onSubmit) {
 				setTouched({})
 				setErrors({})
 			} catch (error) {
-				// Handle submission error if needed
+				const message = error instanceof Error ? error.message : 'Form submission failed'
+				setSubmitError(message)
 				console.error('Form submission error:', error)
 			} finally {
 				setIsSubmitting(false)
@@ -72,6 +76,7 @@ export function useForm(initialValues, onSubmit) {
 		setValues(initialValues)
 		setErrors({})
 		setTouched({})
+		setSubmitError(null)
 	}, [initialValues])
 
 	const setFieldError = useCallback((field, error) => {
@@ -93,6 +98,7 @@ export function useForm(initialValues, onSubmit) {
 		errors,
 		touched,
 		isSubmitting,
+		submitError,
 		setValues,
 		setFieldValue,
 		setFieldError,

@@ -1,16 +1,23 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useForm } from '../hooks/useForm'
+import { getRoleHomePath } from '../utils/authRoutes'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, role } = useAuth()
 
-  const { values, errors, handleChange, handleSubmit } = useForm(
-    { email: '', password: '' },
+  const {
+    values,
+    submitError,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  } = useForm(
+    { username: '', password: '' },
     async (formData) => {
-      login(formData)
-      navigate('/analytics', { replace: true })
+      const authenticatedUser = await login(formData)
+      navigate(getRoleHomePath(authenticatedUser?.role ?? role), { replace: true })
     }
   )
 
@@ -20,36 +27,41 @@ export default function LoginPage() {
         <p className="auth-eyebrow">Enterprise Access</p>
         <h1>Project Management Portal</h1>
         <p className="auth-description">
-          Frontend mock preparado para integrarse luego con auth-service y arquitectura de microservicios.
-          Puedes iniciar con cualquier correo por ahora.
+          Sign in with a hardcoded profile. For now, use <strong>admin</strong> or <strong>developer</strong>.
         </p>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <label htmlFor="email" className="form-label">Correo corporativo</label>
+          <label htmlFor="username" className="form-label">Username</label>
           <input
-            id="email"
-            name="email"
-            type="email"
+            id="username"
+            name="username"
+            type="text"
             className="form-input"
-            placeholder="tu.nombre@empresa.com"
-            value={values.email}
+            placeholder="developer"
+            autoComplete="username"
+            value={values.username}
             onChange={handleChange}
             required
           />
 
-          <label htmlFor="password" className="form-label">Contrasena</label>
+          <label htmlFor="password" className="form-label">Password</label>
           <input
             id="password"
             name="password"
             type="password"
             className="form-input"
-            placeholder="Ingresa tu contrasena"
+            placeholder="Any value for now"
+            autoComplete="current-password"
             value={values.password}
             onChange={handleChange}
             required
           />
 
-          <button type="submit" className="btn btn-primary">Sign in</button>
+          {submitError ? <p className="form-error auth-form-error">{submitError}</p> : null}
+
+          <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? 'Signing in...' : 'Sign in'}
+          </button>
         </form>
       </section>
     </div>

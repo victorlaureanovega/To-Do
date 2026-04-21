@@ -1,52 +1,71 @@
 import { createContext, useEffect, useMemo, useState } from 'react'
+import { authService } from '../../services/api/authService'
+import { normalizeRole } from '../../utils/authRoutes'
 
 export const AuthContext = createContext(null)
 
-const AUTH_STORAGE_KEY = 'pms.mock.auth'
+const AUTH_STORAGE_KEY = 'taskflow.auth.user'
+const LEGACY_AUTH_STORAGE_KEY = 'pms.mock.auth'
+
+const getDisplayName = (user) => {
+  const fullName = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()
+  return user?.name || fullName || user?.username || 'User'
+}
+
+const normalizeUser = (user) => {
+  if (!user) {
+    return null
+  }
+
+  return {
+    ...user,
+    role: normalizeRole(user?.role),
+    name: getDisplayName(user),
+    id: String(user?.id ?? user?.userId ?? user?.username ?? ''),
+  }
+}
+
+const getStoredUser = () => {
+  const stored = window.localStorage.getItem(AUTH_STORAGE_KEY)
+    ?? window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY)
+
+  if (!stored) {
+    return null
+  }
+
+  try {
+    return normalizeUser(JSON.parse(stored))
+  } catch {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY)
+    window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    return null
+  }
+}
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState(() => getStoredUser())
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(AUTH_STORAGE_KEY)
-    if (!stored) {
-      return
-    }
-
-    try {
-      setUser(JSON.parse(stored))
-    } catch {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY)
+    const storedUser = getStoredUser()
+    if (storedUser) {
+      setUser(storedUser)
     }
   }, [])
 
-  const login = ({ email, password }) => {
-    const normalizedEmail = (email ?? '').trim().toLowerCase()
-    const localPart = normalizedEmail.split('@')[0] ?? 'user'
+  const login = async ({ username, password }) => {
+    const authenticatedUser = normalizeUser(await authService.login({ username, password }))
 
-    // Mock login: accepts any email/password for now.
-    const role = normalizedEmail.includes('manager') ? 'Manager' : 'Developer'
-    const displayName = localPart
-      .split(/[._-]/g)
-      .filter(Boolean)
-      .map((chunk) => chunk[0].toUpperCase() + chunk.slice(1))
-      .join(' ')
+    setUser(authenticatedUser)
+    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authenticatedUser))
+    window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
 
-    const selectedUser = {
-      id: `${role.toLowerCase()}-${Date.now()}`,
-      name: displayName || 'User',
-      email: normalizedEmail,
-      role,
-      passwordLength: String(password ?? '').length,
-    }
-
-    setUser(selectedUser)
-    window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(selectedUser))
+    return authenticatedUser
   }
 
   const logout = () => {
     setUser(null)
     window.localStorage.removeItem(AUTH_STORAGE_KEY)
+    window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
   }
 
   const value = useMemo(
