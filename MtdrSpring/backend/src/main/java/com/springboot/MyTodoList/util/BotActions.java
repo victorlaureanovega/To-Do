@@ -3,7 +3,9 @@ import com.springboot.MyTodoList.model.*;
 import com.springboot.MyTodoList.service.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
+
+//import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -86,12 +88,14 @@ public class BotActions {
                 task.setEverFinished(1);
                 task.setFinishDate(new java.sql.Date(System.currentTimeMillis()));
                 taskService.save(task);
-                BotHelper.sendMessageToTelegram(chatId, BotMessages.ITEM_DONE.getMessage(), telegramClient);
+
+                String mensaje = "Item done! \nHow many hours did it take you? \n\n" +
+                                "Answer with: " + id + " / [hours]";
+                BotHelper.sendMessageToTelegram(chatId, mensaje, telegramClient);
             });
         } catch (Exception e) {
             logger.error("Error en fnDone: " + e.getMessage());
         }
-
         exit = true;
     }
 
@@ -199,6 +203,31 @@ public class BotActions {
         // Filtro de seguridad para no guardar botones como tareas
         if (isCommandOrLabel(requestText)) return;
 
+        // Duración real (finalización de tareas)
+        if (requestText.contains("/")) {
+            String[] parts = requestText.split("/");
+            // Ver si la primera parte es un ID de tarea existente
+            try {
+                Long potentialId = Long.parseLong(parts[0].trim());
+                Float hours = Float.parseFloat(parts[1].trim());
+
+                Optional<Task> taskOpt = taskService.findById(potentialId);
+                if (taskOpt.isPresent() && "Finalizada".equals(taskOpt.get().getTaskStatus())) {
+                    Task task = taskOpt.get();
+                    task.setRealDuration(hours);
+                    task.setTotalHoursWorked(hours.doubleValue()); // O sumar si ya tenía algo
+                    taskService.save(task);
+
+                    BotHelper.sendMessageToTelegram(chatId, "Registered time " + hours + " hrs. Well done!\nSelect /todolist to return to the list of todo items, or /start to go to the main screen.", telegramClient);
+                    exit = true;
+                    return;
+                }
+            } catch (Exception e) {
+                // Si falla, no era un registro de tiempo, seguimos con la creación de tarea normal
+            }
+        }
+    
+        // Creación de tareas
         userService.findByTelegramId(chatId).ifPresentOrElse(user -> {
             try {
                 Task newTask = new Task();
