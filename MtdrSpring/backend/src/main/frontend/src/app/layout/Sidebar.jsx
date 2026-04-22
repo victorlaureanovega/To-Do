@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, ListChecks, Users } from 'lucide-react'
+import { BarChart3, ListChecks, Sparkles, Target, Users } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 
 const NAV_ITEMS = [
-  { to: '/developer/tasks', label: 'Tasks', icon: ListChecks, roles: ['Developer'] },
-  { to: '/manager/overview', label: 'Tasks', icon: Users, roles: ['Manager'] },
-  { to: '/analytics', label: 'Dashboard', icon: BarChart3, roles: ['Developer', 'Manager'] },
+  { to: '/developer/tasks', label: 'Tasks', icon: ListChecks, roles: ['DEVELOPER'] },
+  { to: '/developer/dashboard', label: 'Dashboard', icon: Target, roles: ['DEVELOPER'] },
+  { to: '/developer/ai', label: 'AI', icon: Sparkles, roles: ['DEVELOPER'] },
+  { to: '/manager/tasks', label: 'Tasks', icon: Users, roles: ['MANAGER'] },
+  { to: '/manager/dashboard', label: 'Dashboard', icon: BarChart3, roles: ['MANAGER'] },
 ]
 
 export default function Sidebar() {

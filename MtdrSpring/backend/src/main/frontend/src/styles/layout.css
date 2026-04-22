@@ -168,6 +168,11 @@
   padding: 0.2rem;
 }
 
+.developer-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
 .auth-page {
   min-height: 100vh;
   display: grid;

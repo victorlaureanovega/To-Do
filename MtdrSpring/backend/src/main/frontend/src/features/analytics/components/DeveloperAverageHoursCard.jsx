@@ -115,7 +115,7 @@ export default function DeveloperAverageHoursCard({ selectedDeveloperId = 'all' 
 
   return (
     <KpiCard
-      label="Average worked hours by developer"
+      label="Average Hours per Task"
       value={valueContent}
       valueClassName={loading || error ? undefined : 'kpi-card__value--compact'}
       icon={Hourglass}
