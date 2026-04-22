@@ -192,37 +192,79 @@ public class BotActions {
         
         exit = true; 
     }
-
+    
     public void fnElse() {
         if (exit) return;
+
+        // Filtro de seguridad para no guardar botones como tareas
+        if (isCommandOrLabel(requestText)) return;
 
         userService.findByTelegramId(chatId).ifPresentOrElse(user -> {
             try {
                 Task newTask = new Task();
-                newTask.setContent(requestText);
                 newTask.setUser(user);
                 newTask.setTaskStatus("Pendiente");
                 newTask.setIsActive(1);
                 newTask.setEverFinished(0);
-                
-                // ASIGNAR TIPO OBLIGATORIO
-                TaskType type = taskService.getDefaultType(); 
-                if (type == null) {
-                    BotHelper.sendMessageToTelegram(chatId, "Error: No hay tipos de tarea configurados en la DB.", telegramClient);
+
+                // Separar por el carácter '/'
+                String[] parts = requestText.split("/");
+
+                if (parts.length >= 1) {
+                    // Parte 1: Contenido (limpiar espacios extras)
+                    newTask.setContent(parts[0].trim());
+                }
+
+                // Parte 2: Duración estimada (si existe)
+                if (parts.length >= 2) {
+                    try {
+                        newTask.setEstimatedDuration(Float.parseFloat(parts[1].trim()));
+                    } catch (NumberFormatException e) {
+                        logger.warn("Formato de duración inválido, usando 0");
+                        newTask.setEstimatedDuration(0f);
+                    }
+                } else {
+                    newTask.setEstimatedDuration(0f);
+                }
+
+                // Parte 3: Tipo de tarea (si existe)
+                if (parts.length >= 3) {
+                    String typeName = parts[2].trim();
+                    // Buscar el tipo por nombre en la DB
+                    taskService.findTypeByName(typeName).ifPresentOrElse(
+                        newTask::setType,
+                        () -> newTask.setType(taskService.getDefaultType())
+                    );
+                } else {
+                    newTask.setType(taskService.getDefaultType());
+                }
+
+                // Guardado final
+                if (newTask.getType() == null) {
+                    BotHelper.sendMessageToTelegram(chatId, "Error: No hay tipos de tarea configurados.", telegramClient);
                     return;
                 }
-                newTask.setType(type);
 
                 taskService.save(newTask);
                 BotHelper.sendMessageToTelegram(chatId, BotMessages.NEW_ITEM_ADDED.getMessage(), telegramClient);
+
             } catch (Exception e) {
                 logger.error("Error al guardar: " + e.getMessage());
-                BotHelper.sendMessageToTelegram(chatId, "Error técnico al guardar la tarea.", telegramClient);
+                BotHelper.sendMessageToTelegram(chatId, "Error técnico al guardar. Revisa el formato.", telegramClient);
             }
         }, () -> {
             BotHelper.sendMessageToTelegram(chatId, "No registrado. ID: " + chatId, telegramClient);
         });
+
         exit = true;
+    }
+
+    // Método auxiliar para evitar que los labels se guarden
+    private boolean isCommandOrLabel(String text) {
+        return text.equals(BotLabels.ADD_NEW_ITEM.getLabel()) ||
+            text.equals(BotLabels.SHOW_MAIN_SCREEN.getLabel()) ||
+            text.equals(BotLabels.LIST_ALL_ITEMS.getLabel()) ||
+            text.startsWith("/");
     }
 
     public void fnLLM(){

@@ -52,4 +52,8 @@ public class TaskService {
     public void deleteById(Long id) {
         taskRepository.deleteById(id);
     }
+
+    public Optional<TaskType> findTypeByName(String name) {
+        return taskTypeRepository.findByName(name);
+    }
 }

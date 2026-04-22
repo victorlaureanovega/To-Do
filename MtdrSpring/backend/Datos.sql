@@ -98,3 +98,6 @@ INSERT INTO APP_USER.Task (userId, typeId, content, taskStatus, estimatedDuratio
     VALUES (13, 1, 'Mejorar la interfaz del frontend', 'Pendiente', 4.5, 0.0, 0.0, 1, 0, CURRENT_DATE, NULL);
 
 COMMIT;
+
+UPDATE APP_USER.Users SET telegramId = 8103220578 WHERE username = 'victor_dev';
+COMMIT;
