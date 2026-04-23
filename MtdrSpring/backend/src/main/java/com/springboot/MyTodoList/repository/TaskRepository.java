@@ -42,11 +42,20 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "FROM Team team WHERE team.teamId = :teamId")
     Float getAverageWorkedHoursByTeam(@Param("teamId") Long teamId);
 
+    // Promedio de horas trabajadas por cada desarrollador
+    @Query("SELECT AVG(t.realDuration) FROM Task t WHERE t.user.userId = :userId")
+    Float getAverageWorkedHoursByDev(@Param("userId") Long userId);
+
     // Promedio de actividades finalizadas por cada miembro de un equipo
     @Query("SELECT (SELECT CAST(COUNT(t) AS float) FROM Task t WHERE t.user.team.teamId = :teamId AND t.taskStatus = 'Finalizada') / " +
        "(SELECT COUNT(u) FROM User u WHERE u.team.teamId = :teamId) " +
        "FROM Team tm WHERE tm.teamId = :teamId")
     Float getAverageFinishedTasksByTeam(@Param("teamId") Long teamId);
+
+    // Promedio de actividades finalizadas por cada desarrollador
+    @Query("SELECT CAST(COUNT(t) FILTER (WHERE t.taskStatus = 'Finalizada') AS float) / COUNT(t) " +
+       "FROM Task t WHERE t.user.userId = :userId")
+    Float getAverageFinishedTasksByDev(@Param("userId") Long userId);
 
     // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
     @Query("SELECT COALESCE(SUM(t.estimatedDuration), 0.0) AS totalEstimatedHours, " +
@@ -62,6 +71,12 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
        "WHERE u.team.teamId = :teamId")
     Float getReworkRateByTeam(@Param("teamId") Long teamId);
 
+    // Obtener la tasa de retrabajo de un desarrollador
+    @Query("SELECT SUM(CASE WHEN t.everFinished = 1 AND t.taskStatus != 'Finalizada' THEN 1.0 ELSE 0.0 END) / " +
+       "NULLIF(SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1.0 ELSE 0.0 END), 0) " +
+       "FROM Task t WHERE t.user.userId = :userId")
+    Float getReworkRateByDev(@Param("userId") Long userId);
+
     // Obtener todas las tareas por tipo
     @Query("SELECT tt.name AS typeName, COUNT(t) AS count " +
        "FROM Task t " + "JOIN t.type tt " +
@@ -76,6 +91,16 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
            "FROM Task t " +
            "GROUP BY trunc(t.creationDate)", nativeQuery = true)
     List<TaskByDate> getTasksGroupedByDate();
+
+    // Obtener las tareas agrupadas por fecha de creación, por desarrollador
+    @Query(value = "SELECT trunc(t.creationDate) AS taskDate, " +
+               "COUNT(t.taskId) AS registered, " +
+               "SUM(CASE WHEN t.taskStatus = 'Finalizada' THEN 1 ELSE 0 END) AS completed " +
+               "FROM Task t " +
+               "WHERE t.userId = :userId " +
+               "GROUP BY trunc(t.creationDate) " +
+               "ORDER BY taskDate DESC", nativeQuery = true)
+    List<TaskByDate> getTasksGroupedByDateByDev(@Param("userId") Long userId);
 
     // Eliminar una tarea
     @Modifying
