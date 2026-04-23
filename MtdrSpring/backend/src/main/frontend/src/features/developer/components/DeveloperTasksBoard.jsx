@@ -3,6 +3,7 @@ import { ListChecks, Pencil, Trash2 } from 'lucide-react'
 import SectionCard from '../../../components/common/SectionCard'
 import EmptyState from '../../../components/common/EmptyState'
 import SkeletonCard from '../../../components/common/SkeletonCard'
+import { useAuth } from '../../../hooks/useAuth'
 
 const getDisplayName = (developer) => {
   const fullName = `${developer?.firstName ?? ''} ${developer?.lastName ?? ''}`.trim()
@@ -117,12 +118,11 @@ const getRealDuration = (task) => pickFirstValue(
 )
 
 const getTaskRowId = (task, index) => String(
-  task?.taskId ?? task?.id ?? `task-${DEVELOPER_ID}-${index}`,
+  task?.taskId ?? task?.id ?? `task-${index}`,
 )
 
-const DEVELOPER_ID = 8
-
 export default function DeveloperTasksBoard() {
+  const { user } = useAuth()
   const [developerGroups, setDeveloperGroups] = useState([])
   const [draftTasks, setDraftTasks] = useState([])
   const [taskOverrides, setTaskOverrides] = useState({})
@@ -141,18 +141,27 @@ export default function DeveloperTasksBoard() {
   const [error, setError] = useState(null)
 
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+  const developerId = String(user?.userId ?? user?.id ?? '').trim()
+  const developerName = user?.name ?? user?.username ?? (developerId ? `Developer ${developerId}` : 'Developer')
 
   useEffect(() => {
     let isCancelled = false
 
     const loadDeveloperTaskGroups = async () => {
+      if (!developerId) {
+        setDeveloperGroups([])
+        setError(new Error('No authenticated developer ID available'))
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       setError(null)
 
       try {
         const endpoint = apiBaseUrl
-          ? `${apiBaseUrl}/api/tasks/by-developer/${DEVELOPER_ID}`
-          : `/api/tasks/by-developer/${DEVELOPER_ID}`
+          ? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
+          : `/api/tasks/by-developer/${developerId}`
 
         const response = await fetch(endpoint, {
           method: 'GET',
@@ -169,8 +178,8 @@ export default function DeveloperTasksBoard() {
         if (!isCancelled) {
           setDeveloperGroups([
             {
-              developerId: String(DEVELOPER_ID),
-              developerName: `Developer ${DEVELOPER_ID}`,
+              developerId,
+              developerName,
               tasks: rawTasks,
             },
           ])
@@ -192,7 +201,7 @@ export default function DeveloperTasksBoard() {
     return () => {
       isCancelled = true
     }
-  }, [apiBaseUrl])
+  }, [apiBaseUrl, developerId, developerName])
 
   const totalTasks = useMemo(
     () => developerGroups.reduce((sum, group) => sum + group.tasks.length, 0),

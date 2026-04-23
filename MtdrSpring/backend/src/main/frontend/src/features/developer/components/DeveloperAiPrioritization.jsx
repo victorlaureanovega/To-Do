@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { GoogleGenAI } from '@google/genai'
 import SectionCard from '../../../components/common/SectionCard'
+import { useAuth } from '../../../hooks/useAuth'
 
-const DEVELOPER_ID = 8
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 const geminiApiKey = (import.meta.env.VITE_GEMINI_API_KEY ?? import.meta.env.GEMINI_API_KEY ?? '').trim()
 const geminiModel = (import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3-flash-preview').trim()
@@ -88,6 +88,8 @@ const parseGeminiTaskArray = (rawText) => {
 }
 
 export default function DeveloperAiPrioritization() {
+  const { user } = useAuth()
+  const developerId = String(user?.userId ?? user?.id ?? '').trim()
   const [loadingTasks, setLoadingTasks] = useState(false)
   const [tasksError, setTasksError] = useState(null)
   const [allTasks, setAllTasks] = useState([])
@@ -107,9 +109,13 @@ export default function DeveloperAiPrioritization() {
     setTasksError(null)
 
     try {
+      if (!developerId) {
+        throw new Error('No authenticated developer ID available')
+      }
+
       const endpoint = apiBaseUrl
-        ? `${apiBaseUrl}/api/tasks/by-developer/${DEVELOPER_ID}`
-        : `/api/tasks/by-developer/${DEVELOPER_ID}`
+        ? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
+        : `/api/tasks/by-developer/${developerId}`
 
       const response = await fetch(endpoint, {
         method: 'GET',
@@ -175,7 +181,7 @@ export default function DeveloperAiPrioritization() {
     <div className="developer-task-board">
       <SectionCard
         title="In-progress tasks"
-        subtitle={`Developer ${DEVELOPER_ID} - source for AI prioritization`}
+        subtitle={`${user?.name ?? user?.username ?? `Developer ${developerId || '?'}`} - source for AI prioritization`}
         actions={(
           <button type="button" className="btn-secondary" onClick={loadTasks} disabled={loadingTasks || ordering}>
             {loadingTasks ? 'Loading tasks...' : 'Load my in-progress tasks'}
@@ -191,7 +197,7 @@ export default function DeveloperAiPrioritization() {
 
         {!tasksError && !loadingTasks && allTasks.length > 0 && inProgressTasks.length === 0 && (
           <div style={{ padding: '1rem' }}>
-            No tasks with ongoing or in-progress status were found for this developer.
+            No tasks with ongoing or in-progress status were found for this user.
           </div>
         )}
 

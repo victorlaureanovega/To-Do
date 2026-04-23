@@ -27,7 +27,7 @@ export default function LoginPage() {
         <p className="auth-eyebrow">Enterprise Access</p>
         <h1>Project Management Portal</h1>
         <p className="auth-description">
-          Sign in with a hardcoded profile. For now, use <strong>admin</strong> or <strong>developer</strong>.
+          Sign in with your database username. Password is currently not validated in this frontend flow.
         </p>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -37,7 +37,7 @@ export default function LoginPage() {
             name="username"
             type="text"
             className="form-input"
-            placeholder="developer"
+            placeholder="mariano_dev"
             autoComplete="username"
             value={values.username}
             onChange={handleChange}
@@ -50,7 +50,7 @@ export default function LoginPage() {
             name="password"
             type="password"
             className="form-input"
-            placeholder="Any value for now"
+            placeholder="Any value"
             autoComplete="current-password"
             value={values.password}
             onChange={handleChange}
