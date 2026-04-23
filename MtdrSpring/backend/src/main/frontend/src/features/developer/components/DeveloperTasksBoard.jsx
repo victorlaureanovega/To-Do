@@ -1,14 +1,13 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { ListChecks, Pencil, Trash2 } from 'lucide-react'
 import SectionCard from '../../../components/common/SectionCard'
 import EmptyState from '../../../components/common/EmptyState'
 import SkeletonCard from '../../../components/common/SkeletonCard'
+import Modal from '../../../components/common/Modal'
 import { useAuth } from '../../../hooks/useAuth'
 
-const getDisplayName = (developer) => {
-  const fullName = `${developer?.firstName ?? ''} ${developer?.lastName ?? ''}`.trim()
-  return fullName || developer?.username || `Developer ${developer?.userId ?? ''}`
-}
+const DEFAULT_TASK_TYPES = ['Feature', 'Bug', 'Research', 'Documentation']
+const STATUS_OPTIONS = ['Pendiente', 'En curso', 'Finalizada']
 
 const EMPTY_VALUE = 'N/A'
 
@@ -77,6 +76,23 @@ const getTaskStatusTone = (task) => {
   const normalized = String(
     pickFirstValue(task?.taskStatus, task?.status, task?.taskState) ?? '',
   ).trim().toLowerCase()
+
+  if (
+    normalized.includes('final')
+    || normalized.includes('done')
+    || normalized.includes('complete')
+  ) {
+    return 'developer-task-status--green'
+  }
+
+  if (
+    normalized.includes('curso')
+    || normalized.includes('progress')
+    || normalized.includes('ongoing')
+  ) {
+    return 'developer-task-status--yellow'
+  }
+
   if (
     normalized.includes('pend')
     || normalized.includes('todo')
@@ -85,7 +101,7 @@ const getTaskStatusTone = (task) => {
     return 'developer-task-status--red'
   }
 
-  return 'developer-task-status--blue'
+  return 'developer-task-status--yellow'
 }
 
 const getTaskContent = (task) => String(
@@ -121,11 +137,25 @@ const getTaskRowId = (task, index) => String(
   task?.taskId ?? task?.id ?? `task-${index}`,
 )
 
+const getTaskNumericId = (task) => Number(task?.taskId ?? task?.id)
+
+const parseHours = (value) => {
+  const normalized = String(value ?? '').trim().replace(',', '.')
+  if (!normalized) {
+    return null
+  }
+
+  const numeric = Number.parseFloat(normalized)
+  return Number.isFinite(numeric) ? numeric : null
+}
+
+const normalizeTaskTypeName = (value) => String(value ?? '').trim().toLowerCase()
+
 export default function DeveloperTasksBoard() {
   const { user } = useAuth()
   const [developerGroups, setDeveloperGroups] = useState([])
-  const [draftTasks, setDraftTasks] = useState([])
-  const [taskOverrides, setTaskOverrides] = useState({})
+  const [taskTypesByName, setTaskTypesByName] = useState({})
+  const [taskTypeOptions, setTaskTypeOptions] = useState(DEFAULT_TASK_TYPES)
   const [editingTaskId, setEditingTaskId] = useState(null)
   const [taskEditDraft, setTaskEditDraft] = useState({
     task: '',
@@ -139,69 +169,115 @@ export default function DeveloperTasksBoard() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isSavingTask, setIsSavingTask] = useState(false)
+  const [isCreatingTask, setIsCreatingTask] = useState(false)
+  const [rowActionTaskId, setRowActionTaskId] = useState(null)
+  const [pendingDeleteTask, setPendingDeleteTask] = useState(null)
 
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
   const developerId = String(user?.userId ?? user?.id ?? '').trim()
   const developerName = user?.name ?? user?.username ?? (developerId ? `Developer ${developerId}` : 'Developer')
 
+  const loadTaskTypeCatalog = useCallback(async () => {
+    const allTasksEndpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks` : '/api/tasks'
+    const response = await fetch(allTasksEndpoint, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+    }
+
+    const payload = await response.json()
+    const tasks = Array.isArray(payload) ? payload : []
+
+    const mappedByName = {}
+    for (const task of tasks) {
+      const typeName = pickFirstValue(task?.type?.name, task?.typeName, task?.taskType)
+      const typeId = task?.type?.typeId ?? task?.typeId
+
+      if (!hasValue(typeName) || !hasValue(typeId)) {
+        continue
+      }
+
+      mappedByName[normalizeTaskTypeName(typeName)] = {
+        id: Number(typeId),
+        name: String(typeName),
+      }
+    }
+
+    setTaskTypesByName(mappedByName)
+    setTaskTypeOptions((previous) => {
+      const dynamicNames = Object.values(mappedByName).map((entry) => entry.name)
+      return Array.from(new Set([...DEFAULT_TASK_TYPES, ...dynamicNames, ...previous]))
+    })
+  }, [apiBaseUrl])
+
+  const loadDeveloperTaskGroups = useCallback(async () => {
+    if (!developerId) {
+      setDeveloperGroups([])
+      setError(new Error('No authenticated developer ID available'))
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const endpoint = apiBaseUrl
+        ? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
+        : `/api/tasks/by-developer/${developerId}`
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+      }
+
+      const payload = await response.json()
+      const rawTasks = (Array.isArray(payload) ? payload : []).filter((task) => Number(task?.isActive ?? 1) !== 0)
+
+      setDeveloperGroups([
+        {
+          developerId,
+          developerName,
+          tasks: rawTasks,
+        },
+      ])
+    } catch (fetchError) {
+      setError(fetchError)
+      setDeveloperGroups([])
+    } finally {
+      setLoading(false)
+    }
+  }, [apiBaseUrl, developerId, developerName])
+
   useEffect(() => {
     let isCancelled = false
 
-    const loadDeveloperTaskGroups = async () => {
-      if (!developerId) {
-        setDeveloperGroups([])
-        setError(new Error('No authenticated developer ID available'))
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      setError(null)
-
+    const loadInitialData = async () => {
       try {
-        const endpoint = apiBaseUrl
-          ? `${apiBaseUrl}/api/tasks/by-developer/${developerId}`
-          : `/api/tasks/by-developer/${developerId}`
-
-        const response = await fetch(endpoint, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-        })
-
-        if (!response.ok) {
-          throw new Error(`Backend responded ${response.status} ${response.statusText}`)
-        }
-
-        const payload = await response.json()
-        const rawTasks = Array.isArray(payload) ? payload : []
-
+        await Promise.all([loadTaskTypeCatalog(), loadDeveloperTaskGroups()])
+      } catch (loadError) {
         if (!isCancelled) {
-          setDeveloperGroups([
-            {
-              developerId,
-              developerName,
-              tasks: rawTasks,
-            },
-          ])
-        }
-      } catch (fetchError) {
-        if (!isCancelled) {
-          setError(fetchError)
-          setDeveloperGroups([])
-        }
-      } finally {
-        if (!isCancelled) {
-          setLoading(false)
+          setError(loadError)
         }
       }
     }
 
-    loadDeveloperTaskGroups()
+    if (!isCancelled) {
+      loadInitialData()
+    }
 
     return () => {
       isCancelled = true
     }
-  }, [apiBaseUrl, developerId, developerName])
+  }, [loadDeveloperTaskGroups, loadTaskTypeCatalog])
 
   const totalTasks = useMemo(
     () => developerGroups.reduce((sum, group) => sum + group.tasks.length, 0),
@@ -216,35 +292,67 @@ export default function DeveloperTasksBoard() {
     }))
   }
 
-  const handleDraftSubmit = (event) => {
+  const createTask = async (event) => {
     event.preventDefault()
 
-    if (!draftForm.task.trim() || !draftForm.type.trim() || !draftForm.estimatedDuration.trim()) {
+    if (!draftForm.task.trim() || !draftForm.type.trim()) {
       return
     }
 
-    setDraftTasks((previous) => [
-      {
-        id: `draft-${Date.now()}`,
-        task: draftForm.task.trim(),
-        type: draftForm.type.trim(),
-        estimatedDuration: draftForm.estimatedDuration.trim(),
-      },
-      ...previous,
-    ])
+    const estimatedDuration = parseHours(draftForm.estimatedDuration)
+    if (estimatedDuration == null) {
+      setError(new Error('Estimated duration must be a valid number'))
+      return
+    }
 
-    setDraftForm({
-      task: '',
-      type: '',
-      estimatedDuration: '',
-    })
+    const selectedType = taskTypesByName[normalizeTaskTypeName(draftForm.type)]
+    if (!selectedType?.id) {
+      setError(new Error('Selected task type is not available in backend catalog'))
+      return
+    }
+
+    setIsCreatingTask(true)
+    setError(null)
+
+    try {
+      const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks` : '/api/tasks'
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: draftForm.task.trim(),
+          estimatedDuration,
+          userId: Number(developerId),
+          typeId: selectedType.id,
+          sprintId: null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+      }
+
+      setDraftForm({
+        task: '',
+        type: '',
+        estimatedDuration: '',
+      })
+
+      await loadDeveloperTaskGroups()
+    } catch (createError) {
+      setError(createError)
+    } finally {
+      setIsCreatingTask(false)
+    }
   }
 
   const startTaskEdit = (rowId, task) => {
-    const override = taskOverrides[rowId] ?? {}
-    const currentTask = override.task ?? getTaskContent(task)
-    const currentType = override.type ?? getTaskType(task)
-    const currentEstimated = override.estimatedDuration ?? getEstimatedDuration(task)
+    const currentTask = getTaskContent(task)
+    const currentType = getTaskType(task)
+    const currentEstimated = getEstimatedDuration(task)
 
     setTaskEditDraft({
       task: currentTask === EMPTY_VALUE ? '' : String(currentTask),
@@ -273,25 +381,146 @@ export default function DeveloperTasksBoard() {
     })
   }
 
-  const saveTaskEditMock = (rowId, task) => {
-    setTaskOverrides((previous) => ({
-      ...previous,
-      [rowId]: {
-        task: taskEditDraft.task.trim() || getTaskContent(task),
-        type: taskEditDraft.type.trim() || getTaskType(task),
-        estimatedDuration: taskEditDraft.estimatedDuration.trim() || getEstimatedDuration(task),
-      },
-    }))
-    cancelTaskEdit()
+  const saveTaskEdit = async (rowId, task) => {
+    const taskId = getTaskNumericId(task)
+    if (!Number.isFinite(taskId)) {
+      setError(new Error('Task ID is invalid for update'))
+      return
+    }
+
+    const resolvedContent = taskEditDraft.task.trim() || getTaskContent(task)
+    const resolvedTypeName = taskEditDraft.type.trim() || getTaskType(task)
+    const resolvedEstimatedRaw = taskEditDraft.estimatedDuration.trim() || String(getEstimatedDuration(task) ?? '')
+    const resolvedEstimatedDuration = parseHours(resolvedEstimatedRaw)
+
+    if (resolvedEstimatedDuration == null) {
+      setError(new Error('Estimated duration must be a valid number'))
+      return
+    }
+
+    const selectedType = taskTypesByName[normalizeTaskTypeName(resolvedTypeName)]
+    if (!selectedType?.id) {
+      setError(new Error('Selected task type is not available in backend catalog'))
+      return
+    }
+
+    setIsSavingTask(true)
+    setError(null)
+
+    try {
+      const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks/${taskId}` : `/api/tasks/${taskId}`
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: resolvedContent,
+          estimatedDuration: resolvedEstimatedDuration,
+          userId: Number(developerId),
+          typeId: selectedType.id,
+          sprintId: task?.sprint?.sprintId ?? task?.sprintId ?? null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+      }
+
+      cancelTaskEdit()
+      await loadDeveloperTaskGroups()
+    } catch (updateError) {
+      setError(updateError)
+    } finally {
+      setIsSavingTask(false)
+    }
+  }
+
+  const updateTaskStatus = async (task, nextStatus) => {
+    const taskId = getTaskNumericId(task)
+    if (!Number.isFinite(taskId)) {
+      setError(new Error('Task ID is invalid for status update'))
+      return
+    }
+
+    if (!STATUS_OPTIONS.includes(nextStatus)) {
+      setError(new Error('Selected status is invalid'))
+      return
+    }
+
+    setRowActionTaskId(String(taskId))
+    setError(null)
+
+    try {
+      const endpoint = apiBaseUrl
+        ? `${apiBaseUrl}/api/tasks/status/${taskId}?status=${encodeURIComponent(nextStatus)}`
+        : `/api/tasks/status/${taskId}?status=${encodeURIComponent(nextStatus)}`
+
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+      }
+
+      await loadDeveloperTaskGroups()
+    } catch (statusError) {
+      setError(statusError)
+    } finally {
+      setRowActionTaskId(null)
+    }
+  }
+
+  const executeDeleteTask = async (task) => {
+    const taskId = getTaskNumericId(task)
+    if (!Number.isFinite(taskId)) {
+      setError(new Error('Task ID is invalid for delete'))
+      return
+    }
+
+    setRowActionTaskId(String(taskId))
+    setError(null)
+
+    try {
+      const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks/delete/${taskId}` : `/api/tasks/delete/${taskId}`
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+      }
+
+      setPendingDeleteTask(null)
+      await loadDeveloperTaskGroups()
+    } catch (deleteError) {
+      setError(deleteError)
+    } finally {
+      setRowActionTaskId(null)
+    }
+  }
+
+  const openDeleteConfirmation = (task) => {
+    setPendingDeleteTask(task)
+  }
+
+  const closeDeleteConfirmation = () => {
+    if (!rowActionTaskId) {
+      setPendingDeleteTask(null)
+    }
   }
 
   return (
     <div className="developer-task-board">
       <SectionCard
         title="Create task"
-        subtitle="Local-only draft form for the developer view. Endpoints will be connected later."
+        subtitle="Create a task and persist it to the database."
       >
-        <form className="task-form developer-task-create-form" onSubmit={handleDraftSubmit}>
+        <form className="task-form developer-task-create-form" onSubmit={createTask}>
           <div className="developer-task-create-grid">
             <div className="form-field">
               <label htmlFor="developer-task" className="form-label">Task</label>
@@ -316,10 +545,9 @@ export default function DeveloperTasksBoard() {
                 onChange={handleDraftChange}
               >
                 <option value="">Select a type</option>
-                <option value="Feature">Feature</option>
-                <option value="Bug">Bug</option>
-                <option value="Research">Research</option>
-                <option value="Documentation">Documentation</option>
+                {taskTypeOptions.map((typeName) => (
+                  <option key={typeName} value={typeName}>{typeName}</option>
+                ))}
               </select>
             </div>
 
@@ -338,23 +566,11 @@ export default function DeveloperTasksBoard() {
           </div>
 
           <div className="form-footer developer-task-create-footer">
-            <button type="submit" className="btn btn-primary">Create task</button>
+            <button type="submit" className="btn btn-primary" disabled={isCreatingTask || loading}>
+              {isCreatingTask ? 'Creating...' : 'Create task'}
+            </button>
           </div>
         </form>
-
-        {draftTasks.length > 0 && (
-          <div className="developer-task-drafts">
-            {draftTasks.map((task) => (
-              <article key={task.id} className="developer-task-draft-card">
-                <div className="developer-task-draft-card__top">
-                  <strong>{task.task}</strong>
-                  <span>{task.type}</span>
-                </div>
-                <p>{task.estimatedDuration}</p>
-              </article>
-            ))}
-          </div>
-        )}
       </SectionCard>
 
       <SectionCard title={`Total tasks: ${totalTasks}`} noPad>
@@ -397,11 +613,16 @@ export default function DeveloperTasksBoard() {
                 <tbody>
                   {developerGroups[0]?.tasks.map((task, index) => {
                     const rowId = getTaskRowId(task, index)
-                    const taskOverride = taskOverrides[rowId]
-                    const displayTask = taskOverride?.task ?? getTaskContent(task)
-                    const displayType = taskOverride?.type ?? getTaskType(task)
-                    const displayEstimated = taskOverride?.estimatedDuration ?? getEstimatedDuration(task)
+                    const displayTask = getTaskContent(task)
+                    const displayType = getTaskType(task)
+                    const displayEstimated = getEstimatedDuration(task)
                     const isEditing = editingTaskId === rowId
+                    const numericTaskId = String(getTaskNumericId(task) || '')
+                    const isRowBusy = rowActionTaskId === numericTaskId
+                    const currentStatusLabel = getTaskStatusLabel(task)
+                    const normalizedCurrentStatus = STATUS_OPTIONS.find(
+                      (status) => status.toLowerCase() === String(currentStatusLabel).trim().toLowerCase(),
+                    ) ?? STATUS_OPTIONS[0]
 
                     return (
                     <Fragment key={rowId}>
@@ -422,9 +643,16 @@ export default function DeveloperTasksBoard() {
                         </td>
                         <td>{displayType}</td>
                         <td>
-                          <span className={`developer-task-status ${getTaskStatusTone(task)}`}>
-                            {getTaskStatusLabel(task)}
-                          </span>
+                          <select
+                            className={`form-input developer-task-status-select ${getTaskStatusTone(task)}`}
+                            value={normalizedCurrentStatus}
+                            onChange={(event) => updateTaskStatus(task, event.target.value)}
+                            disabled={isRowBusy || isSavingTask}
+                          >
+                            {STATUS_OPTIONS.map((statusValue) => (
+                              <option key={statusValue} value={statusValue}>{statusValue}</option>
+                            ))}
+                          </select>
                         </td>
                         <td>{formatDate(getCreationDate(task))}</td>
                         <td>{formatDuration(displayEstimated)}</td>
@@ -436,6 +664,8 @@ export default function DeveloperTasksBoard() {
                               type="button"
                               className="developer-task-row__delete-btn"
                               aria-label="Delete task"
+                              onClick={() => openDeleteConfirmation(task)}
+                              disabled={isRowBusy || isSavingTask}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -462,14 +692,18 @@ export default function DeveloperTasksBoard() {
 
                                 <div className="form-field">
                                   <label htmlFor={`task-type-${rowId}`} className="form-label">Type</label>
-                                  <input
+                                  <select
                                     id={`task-type-${rowId}`}
                                     name="type"
-                                    type="text"
                                     className="form-input"
                                     value={taskEditDraft.type}
                                     onChange={handleTaskEditFieldChange}
-                                  />
+                                  >
+                                    <option value="">Select a type</option>
+                                    {taskTypeOptions.map((typeName) => (
+                                      <option key={typeName} value={typeName}>{typeName}</option>
+                                    ))}
+                                  </select>
                                 </div>
 
                                 <div className="form-field">
@@ -496,9 +730,10 @@ export default function DeveloperTasksBoard() {
                                 <button
                                   type="button"
                                   className="developer-task-edit-save"
-                                  onClick={() => saveTaskEditMock(rowId, task)}
+                                  onClick={() => saveTaskEdit(rowId, task)}
+                                  disabled={isSavingTask}
                                 >
-                                  Save
+                                  {isSavingTask ? 'Saving...' : 'Save'}
                                 </button>
                               </div>
                             </div>
@@ -515,6 +750,38 @@ export default function DeveloperTasksBoard() {
         </div>
       )}
       </SectionCard>
+
+      <Modal
+        open={Boolean(pendingDeleteTask)}
+        onClose={closeDeleteConfirmation}
+        title="Delete task"
+        size="sm"
+      >
+        <p className="developer-delete-modal__text">
+          Are you sure you want to delete this task?
+        </p>
+        <p className="developer-delete-modal__task">
+          {pendingDeleteTask ? getTaskContent(pendingDeleteTask) : ''}
+        </p>
+        <div className="developer-delete-modal__actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={closeDeleteConfirmation}
+            disabled={Boolean(rowActionTaskId)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => executeDeleteTask(pendingDeleteTask)}
+            disabled={Boolean(rowActionTaskId) || !pendingDeleteTask}
+          >
+            {rowActionTaskId ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }
