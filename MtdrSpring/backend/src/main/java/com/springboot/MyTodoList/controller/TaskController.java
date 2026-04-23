@@ -61,7 +61,7 @@ public class TaskController {
     @GetMapping("/hours/average-by-dev/{userId}")
     public Float averageWorkedHoursByDev(@PathVariable Long userId) {
         Float average = taskRepository.getAverageWorkedHoursByDev(userId);
-        
+
         return (average != null) ? average : 0.0f;
     }
 
@@ -87,10 +87,18 @@ public class TaskController {
         return taskRepository.getDeveloperHours(developerId);
     }
 
-    // Obtener la tasa de retrabajo
+    // Obtener la tasa de retrabajo de un equipo
     @GetMapping("/rework-rate/by-team/{teamId}")
     public Float getReworkRateByTeam(@PathVariable Long teamId) {
         Float rate = taskRepository.getReworkRateByTeam(teamId);
+
+        return rate;
+    }
+
+    // Obtener la tasa de retrabajo de un desarrollador
+    @GetMapping("rework-rate/by-dev/{userId}")
+    public Float getReworkRateByDev(@PathVariable Long userId) {
+        Float rate = taskRepository.getReworkRateByDev(userId);
 
         return rate;
     }
@@ -99,6 +107,12 @@ public class TaskController {
     @GetMapping("/grouped-by-date")
     public List<TaskByDate> getTasksGroupedByDate() {
         return taskRepository.getTasksGroupedByDate();
+    }
+
+    // Obtener las tareas que fueron creadas en cierto día y su relación con las que fueron finalizadas, por desarrollador
+    @GetMapping("/grouped-by-date/{userId}")
+    public List<TaskByDate> getTasksGroupedByDateByDev(@PathVariable Long userId) {
+        return taskRepository.getTasksGroupedByDateByDev(userId);
     }
 
     // Crear tarea
