@@ -57,12 +57,28 @@ public class TaskController {
         return (average != null) ? average : 0.0f;
     }
 
+    // Obtener el promedio de horas trabajadas por cada desarrollador
+    @GetMapping("/hours/average-by-dev/{userId}")
+    public Float averageWorkedHoursByDev(@PathVariable Long userId) {
+        Float average = taskRepository.getAverageWorkedHoursByDev(userId);
+        
+        return (average != null) ? average : 0.0f;
+    }
+
     // Obtener el promedio de tareas finalizadas por cada miembro del equipo
     @GetMapping("/average-by-team/{teamId}")
     public Float averageFinishedTasksByTeam(@PathVariable Long teamId) {
         Float average = taskRepository.getAverageFinishedTasksByTeam(teamId);
 
         return average;
+    }
+
+    // Obtener el promedio de tareas finalizadas por desarrollador
+    @GetMapping("/average-by-dev/{userId}")
+    public Float averageFinishedTasksByDev(@PathVariable Long userId) {
+        Float average = taskRepository.getAverageFinishedTasksByDev(userId);
+
+        return (average != null) ? average : 0.0f;
     }
 
     // Get total estimated and worked hours by a developer
