@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import SectionCard from '../../../../components/common/SectionCard'
 import { CHART_THEME, CHART_MESSAGE_STYLE, CHART_ERROR_STYLE } from '../../constants/chartTheme'

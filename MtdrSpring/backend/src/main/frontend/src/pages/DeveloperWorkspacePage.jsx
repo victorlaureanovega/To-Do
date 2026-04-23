@@ -1,8 +1,6 @@
-import { Sparkles } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
-import SectionCard from '../components/common/SectionCard'
-import EmptyState from '../components/common/EmptyState'
 import DeveloperTasksBoard from '../features/developer/components/DeveloperTasksBoard'
+import DeveloperAiPrioritization from '../features/developer/components/DeveloperAiPrioritization'
 
 const WORKSPACE_CONTENT = {
   tasks: {
@@ -15,7 +13,7 @@ const WORKSPACE_CONTENT = {
   },
   ai: {
     title: 'Developer Workspace: AI Prioritization',
-    subtitle: 'Placeholder for future AI-based prioritization logic.',
+    subtitle: 'Use AI to prioritize your in-progress tasks.',
   },
 }
 
@@ -29,15 +27,7 @@ export default function DeveloperWorkspacePage({ view = 'tasks' }) {
 
       {selectedView === 'tasks' && <DeveloperTasksBoard />}
       {selectedView === 'dashboard' && <DeveloperTasksBoard />}
-      {selectedView === 'ai' && (
-        <SectionCard title="AI prioritization" subtitle="Placeholder for the upcoming backend-driven view." noPad>
-          <EmptyState
-            icon={Sparkles}
-            title="AI prioritization is coming soon"
-            message="This tab is reserved for the future prioritization engine and backend integration."
-          />
-        </SectionCard>
-      )}
+      {selectedView === 'ai' && <DeveloperAiPrioritization />}
     </section>
   )
 }

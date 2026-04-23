@@ -1,3 +1,5 @@
+import React from 'react'
+
 /**
  * SectionCard
  * Contenedor con header, título y slot de acciones.

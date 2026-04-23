@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Users } from 'lucide-react'
 import PageHeader from '../components/common/PageHeader'
 import SectionCard from '../components/common/SectionCard'
@@ -14,11 +14,11 @@ export default function ManagerOverviewPage() {
   const [developerFilter, setDeveloperFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
 
-  const { teamTasks, getTasks } = useData()
+  const { teamTasks, getTeamTasks } = useData()
 
   useEffect(() => {
-    getTasks()
-  }, [getTasks])
+    getTeamTasks()
+  }, [getTeamTasks])
 
   const developerOptions = [
     { value: 'All', label: 'All developers' },
@@ -29,6 +29,22 @@ export default function ManagerOverviewPage() {
 
   const byDeveloper = useFilter(teamTasks, 'assignee', developerFilter)
   const filtered = useFilter(byDeveloper, 'status', statusFilter)
+  const groupedByDeveloper = useMemo(() => {
+    return filtered.reduce((accumulator, task) => {
+      const assignee = task?.assignee || 'Unassigned'
+      if (!accumulator[assignee]) {
+        accumulator[assignee] = []
+      }
+
+      accumulator[assignee].push(task)
+      return accumulator
+    }, {})
+  }, [filtered])
+
+  const sortedDeveloperNames = useMemo(
+    () => Object.keys(groupedByDeveloper).sort((a, b) => a.localeCompare(b)),
+    [groupedByDeveloper],
+  )
 
   return (
     <>
@@ -56,7 +72,18 @@ export default function ManagerOverviewPage() {
             message="Ajusta los filtros de developer o estado para ver resultados."
           />
         ) : (
-          <TaskTable tasks={filtered} readOnly showAssignee />
+          <div style={{ display: 'grid', gap: '1rem', padding: '1rem' }}>
+            {sortedDeveloperNames.map((developerName) => (
+              <SectionCard
+                key={developerName}
+                title={developerName}
+                subtitle={`${groupedByDeveloper[developerName].length} tasks`}
+                noPad
+              >
+                <TaskTable tasks={groupedByDeveloper[developerName]} readOnly />
+              </SectionCard>
+            ))}
+          </div>
         )}
       </SectionCard>
     </>
