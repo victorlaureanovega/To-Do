@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+﻿import React from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../components/common/PageHeader'
 import AnalyticsFilters from '../features/analytics/components/AnalyticsFilters'
 import DeveloperAverageHoursCard from '../features/analytics/components/DeveloperAverageHoursCard'
@@ -13,10 +14,9 @@ import TaskTypeDistributionChart from '../features/analytics/components/charts/T
 import TimeComparisonChart from '../features/analytics/components/charts/TimeComparisonChart'
 import { StatusTooltip } from '../features/analytics/components/tooltips/StatusTooltip'
 import { TimeComparisonTooltip } from '../features/analytics/components/tooltips/TimeComparisonTooltip'
-import { useAnalyticsAggregation } from '../features/analytics/hooks/useAnalyticsAggregation'
+import { useAuth } from '../hooks/useAuth'
 import { useData } from '../hooks/useData'
 import { fetchTeamDevelopers } from '../utils/teamApi'
-import { mockAnalytics } from '../data'
 
 const buildEndpoint = (apiBaseUrl, path) => (apiBaseUrl ? `${apiBaseUrl}${path}` : path)
 
@@ -33,6 +33,36 @@ const isCompletedStatus = (taskStatus) => {
     || normalized.includes('finish')
     || normalized.includes('termin')
   )
+}
+
+const normalizeStatusBucket = (taskStatus) => {
+  const normalized = String(taskStatus ?? '').trim().toLowerCase()
+
+  if (normalized.includes('pend') || normalized === 'todo' || normalized.includes('to do')) {
+    return 'todo'
+  }
+
+  if (normalized.includes('curso') || normalized.includes('progress') || normalized.includes('progreso')) {
+    return 'inProgress'
+  }
+
+  if (normalized.includes('final') || normalized.includes('complete') || normalized.includes('done')) {
+    return 'completed'
+  }
+
+  return 'todo'
+}
+
+const getTaskTypeName = (task) => {
+  const rawType = task?.type?.typeName ?? task?.typeName ?? task?.taskType ?? 'Unknown'
+  const normalized = String(rawType ?? '').trim()
+  return normalized || 'Unknown'
+}
+
+const resolveUserId = (user) => {
+  const rawId = user?.userId ?? user?.id ?? user?.username
+  const normalized = String(rawId ?? '').trim()
+  return normalized || null
 }
 
 const normalizeChartDate = (rawValue) => {
@@ -67,10 +97,13 @@ const normalizeChartDate = (rawValue) => {
   return String(rawValue)
 }
 
-export default function AnalyticsPage() {
+export default function AnalyticsPage({ lockedDeveloperId = null }) {
+  const { user, role } = useAuth()
   const { teamId } = useData()
   const [developerFilter, setDeveloperFilter] = useState('all')
   const [teamMemberOptions, setTeamMemberOptions] = useState([])
+  const [averageCompletionTime, setAverageCompletionTime] = useState(0)
+  const [statusTotals, setStatusTotals] = useState({ todo: 0, inProgress: 0, completed: 0 })
   const [teamCompletionMetrics, setTeamCompletionMetrics] = useState({
     pieData: [
       { name: 'Completed', value: 0 },
@@ -93,12 +126,10 @@ export default function AnalyticsPage() {
 
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
-  const {
-    averageCompletionTime,
-    timeComparisonData,
-    statusComparisonData,
-    statusTotals,
-  } = useAnalyticsAggregation(mockAnalytics, 'all')
+  const isDeveloperScoped = role === 'DEVELOPER' || Boolean(lockedDeveloperId)
+  const authenticatedUserId = resolveUserId(user)
+  const forcedDeveloperId = String(lockedDeveloperId ?? authenticatedUserId ?? '').trim()
+  const selectedDeveloperId = isDeveloperScoped ? forcedDeveloperId : developerFilter
 
   useEffect(() => {
     let isCancelled = false
@@ -112,10 +143,17 @@ export default function AnalyticsPage() {
       setTasksByDateError(null)
       setTasksByTypeLoading(true)
       setTasksByTypeError(null)
+      setAverageCompletionTime(0)
+      setStatusTotals({ todo: 0, inProgress: 0, completed: 0 })
 
       let members = []
+      let scopedTasks = []
 
       try {
+        if (isDeveloperScoped && !forcedDeveloperId) {
+          throw new Error('Authenticated developer ID was not found.')
+        }
+
         members = await fetchTeamDevelopers(apiBaseUrl, teamId)
         if (isCancelled) {
           return
@@ -134,36 +172,79 @@ export default function AnalyticsPage() {
 
         setTeamMemberOptions(options)
 
+        const scopedMembers = isDeveloperScoped
+          ? members.filter((member) => String(member?.userId ?? '') === forcedDeveloperId)
+          : (selectedDeveloperId === 'all'
+              ? members
+              : members.filter((member) => String(member?.userId ?? '') === String(selectedDeveloperId)))
+
+        const fallbackScopedMembers = isDeveloperScoped && scopedMembers.length === 0
+          ? [{ userId: forcedDeveloperId }]
+          : scopedMembers
+
         const taskFetchResults = await Promise.allSettled(
-          members.map(async (member) => {
+          fallbackScopedMembers.map(async (member) => {
             const developerId = String(member?.userId ?? '').trim()
             if (!developerId) {
-              return []
+              return { tasks: [], totalWorkedHours: 0 }
             }
 
-            const endpoint = buildEndpoint(apiBaseUrl, `/api/tasks/by-developer/${developerId}`)
-            const response = await fetch(endpoint, {
-              method: 'GET',
-              headers: { Accept: 'application/json' },
-            })
+            const tasksEndpoint = buildEndpoint(apiBaseUrl, `/api/tasks/by-developer/${developerId}`)
+            const hoursEndpoint = buildEndpoint(apiBaseUrl, `/api/tasks/hours/by-developer/${developerId}`)
 
-            if (!response.ok) {
-              throw new Error(`Backend responded ${response.status} ${response.statusText}`)
+            const [tasksResponse, hoursResponse] = await Promise.all([
+              fetch(tasksEndpoint, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+              }),
+              fetch(hoursEndpoint, {
+                method: 'GET',
+                headers: { Accept: 'application/json' },
+              }),
+            ])
+
+            if (!tasksResponse.ok) {
+              throw new Error(`Backend responded ${tasksResponse.status} ${tasksResponse.statusText}`)
             }
 
-            const payload = await response.json()
-            return Array.isArray(payload) ? payload : []
+            const tasksPayload = await tasksResponse.json()
+            const tasks = Array.isArray(tasksPayload) ? tasksPayload : []
+
+            let totalWorkedHours = 0
+            if (hoursResponse.ok) {
+              const hoursPayload = await hoursResponse.json()
+              totalWorkedHours = Number(hoursPayload?.totalWorkedHours ?? 0)
+            }
+
+            return {
+              tasks,
+              totalWorkedHours,
+            }
           }),
         )
 
         if (!isCancelled) {
-          const allTasks = taskFetchResults
+          const completedResults = taskFetchResults
             .filter((result) => result.status === 'fulfilled')
             .flatMap((result) => result.value)
 
-          const registered = allTasks.length
-          const completed = allTasks.filter((task) => isCompletedStatus(task?.taskStatus)).length
+          scopedTasks = completedResults.flatMap((result) => result.tasks)
+          const totalWorkedHours = completedResults.reduce(
+            (acc, result) => acc + Number(result.totalWorkedHours ?? 0),
+            0,
+          )
+
+          const registered = scopedTasks.length
+          const completed = scopedTasks.filter((task) => isCompletedStatus(task?.taskStatus)).length
           const pending = Math.max(registered - completed, 0)
+          const nextStatusTotals = scopedTasks.reduce(
+            (acc, task) => {
+              const bucket = normalizeStatusBucket(task?.taskStatus)
+              acc[bucket] += 1
+              return acc
+            },
+            { todo: 0, inProgress: 0, completed: 0 },
+          )
 
           setTeamCompletionMetrics({
             pieData: [
@@ -173,6 +254,8 @@ export default function AnalyticsPage() {
             completionRate: registered > 0 ? `${((completed / registered) * 100).toFixed(1)}%` : '0%',
             completionVsRegistered: `${completed}/${registered}`,
           })
+          setAverageCompletionTime(completed > 0 ? totalWorkedHours / completed : 0)
+          setStatusTotals(nextStatusTotals)
 
           if (taskFetchResults.some((result) => result.status === 'rejected')) {
             setTeamCompletionError({
@@ -196,7 +279,10 @@ export default function AnalyticsPage() {
       }
 
       try {
-        const reworkEndpoint = buildEndpoint(apiBaseUrl, `/api/tasks/rework-rate/by-team/${teamId}`)
+        const reworkPath = isDeveloperScoped
+          ? `/api/tasks/rework-rate/by-dev/${forcedDeveloperId}`
+          : `/api/tasks/rework-rate/by-team/${teamId}`
+        const reworkEndpoint = buildEndpoint(apiBaseUrl, reworkPath)
         const reworkResponse = await fetch(reworkEndpoint, {
           method: 'GET',
           headers: { Accept: 'application/json' },
@@ -225,7 +311,10 @@ export default function AnalyticsPage() {
       }
 
       try {
-        const tasksByDateEndpoint = buildEndpoint(apiBaseUrl, '/api/tasks/grouped-by-date')
+        const tasksByDatePath = (isDeveloperScoped || selectedDeveloperId !== 'all')
+          ? `/api/tasks/grouped-by-date/${isDeveloperScoped ? forcedDeveloperId : selectedDeveloperId}`
+          : '/api/tasks/grouped-by-date'
+        const tasksByDateEndpoint = buildEndpoint(apiBaseUrl, tasksByDatePath)
         const tasksByDateResponse = await fetch(tasksByDateEndpoint, {
           method: 'GET',
           headers: { Accept: 'application/json' },
@@ -260,23 +349,35 @@ export default function AnalyticsPage() {
       }
 
       try {
-        const tasksByTypeEndpoint = buildEndpoint(apiBaseUrl, `/api/tasks/by-type/by-team/${teamId}`)
-        const tasksByTypeResponse = await fetch(tasksByTypeEndpoint, {
-          method: 'GET',
-          headers: { Accept: 'application/json' },
-        })
+        let formattedTasksByType = []
 
-        if (!tasksByTypeResponse.ok) {
-          throw new Error(`Backend responded ${tasksByTypeResponse.status} ${tasksByTypeResponse.statusText}`)
+        if (isDeveloperScoped || selectedDeveloperId !== 'all') {
+          const byTypeMap = scopedTasks.reduce((acc, task) => {
+            const typeName = getTaskTypeName(task)
+            acc.set(typeName, (acc.get(typeName) ?? 0) + 1)
+            return acc
+          }, new Map())
+
+          formattedTasksByType = Array.from(byTypeMap.entries()).map(([name, value]) => ({ name, value }))
+        } else {
+          const tasksByTypeEndpoint = buildEndpoint(apiBaseUrl, `/api/tasks/by-type/by-team/${teamId}`)
+          const tasksByTypeResponse = await fetch(tasksByTypeEndpoint, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          })
+
+          if (!tasksByTypeResponse.ok) {
+            throw new Error(`Backend responded ${tasksByTypeResponse.status} ${tasksByTypeResponse.statusText}`)
+          }
+
+          const rawTasksByType = await tasksByTypeResponse.json()
+          formattedTasksByType = Array.isArray(rawTasksByType)
+            ? rawTasksByType.map((item) => ({
+                name: item.typeName ?? 'Unknown',
+                value: Number(item.count ?? 0),
+              }))
+            : []
         }
-
-        const rawTasksByType = await tasksByTypeResponse.json()
-        const formattedTasksByType = Array.isArray(rawTasksByType)
-          ? rawTasksByType.map((item) => ({
-              name: item.typeName ?? 'Unknown',
-              value: Number(item.count ?? 0),
-            }))
-          : []
 
         if (!isCancelled) {
           setTasksByTypeData(formattedTasksByType)
@@ -299,12 +400,28 @@ export default function AnalyticsPage() {
     return () => {
       isCancelled = true
     }
-  }, [apiBaseUrl, teamId])
+  }, [apiBaseUrl, teamId, isDeveloperScoped, forcedDeveloperId, selectedDeveloperId])
 
   const developerOptions = useMemo(
-    () => [{ value: 'all', label: 'Team view' }, ...teamMemberOptions],
-    [teamMemberOptions],
+    () => {
+      if (isDeveloperScoped) {
+        const currentMemberLabel = teamMemberOptions
+          .find((option) => option.value === forcedDeveloperId)
+          ?.label
+        const label = currentMemberLabel || user?.name || user?.username || 'My view'
+        return [{ value: forcedDeveloperId, label }]
+      }
+
+      return [{ value: 'all', label: 'Team view' }, ...teamMemberOptions]
+    },
+    [isDeveloperScoped, teamMemberOptions, forcedDeveloperId, user],
   )
+
+  useEffect(() => {
+    if (isDeveloperScoped && forcedDeveloperId) {
+      setDeveloperFilter(forcedDeveloperId)
+    }
+  }, [isDeveloperScoped, forcedDeveloperId])
 
   return (
     <>
@@ -314,15 +431,15 @@ export default function AnalyticsPage() {
       />
 
       <AnalyticsFilters
-        developerFilter={developerFilter}
+        developerFilter={selectedDeveloperId}
         onDeveloperFilterChange={setDeveloperFilter}
         developerOptions={developerOptions}
       />
 
       <div className="kpi-grid">
-        <DeveloperAverageHoursCard selectedDeveloperId={developerFilter} />
-        <TeamAverageFinishedTasksCard />
-        <TeamAverageWorkedHoursCard />
+        <DeveloperAverageHoursCard selectedDeveloperId={selectedDeveloperId} />
+        <TeamAverageFinishedTasksCard selectedDeveloperId={isDeveloperScoped ? forcedDeveloperId : null} />
+        <TeamAverageWorkedHoursCard selectedDeveloperId={isDeveloperScoped ? forcedDeveloperId : null} />
       </div>
 
       <KpiSection
@@ -340,11 +457,11 @@ export default function AnalyticsPage() {
       <ChartGrid>
         <div className="analytics-grid__full-row">
           <TasksByStatusChart
-            data={statusComparisonData}
+            data={[]}
             isLoading={false}
             error={null}
             renderTooltip={StatusTooltip}
-            selectedDeveloperId={developerFilter}
+            selectedDeveloperId={selectedDeveloperId}
           />
         </div>
         <div className="analytics-grid__full-row">
@@ -357,11 +474,11 @@ export default function AnalyticsPage() {
         />
         <TaskTypeDistributionChart data={tasksByTypeData} isLoading={tasksByTypeLoading} error={tasksByTypeError} />
         <TimeComparisonChart
-          data={timeComparisonData}
+          data={[]}
           isLoading={false}
           error={null}
           renderTooltip={TimeComparisonTooltip}
-          selectedDeveloperId={developerFilter}
+          selectedDeveloperId={selectedDeveloperId}
         />
       </ChartGrid>
     </>

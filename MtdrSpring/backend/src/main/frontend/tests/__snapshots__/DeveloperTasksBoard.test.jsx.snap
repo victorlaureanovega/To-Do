@@ -1,0 +1,304 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DeveloperTasksBoard > renders backend tasks and matches snapshot 1`] = `
+<div>
+  <div
+    class="developer-task-board"
+  >
+    <section
+      class="section-card"
+    >
+      <div
+        class="section-card__header"
+      >
+        <div>
+          <h2
+            class="section-card__title"
+          >
+            Create task
+          </h2>
+          <p
+            class="section-card__subtitle"
+          >
+            Create a task and persist it to the database.
+          </p>
+        </div>
+      </div>
+      <div
+        class="section-card__body"
+      >
+        <form
+          class="task-form developer-task-create-form"
+        >
+          <div
+            class="developer-task-create-grid"
+          >
+            <div
+              class="form-field"
+            >
+              <label
+                class="form-label"
+                for="developer-task"
+              >
+                Task
+              </label>
+              <input
+                class="form-input"
+                id="developer-task"
+                name="task"
+                placeholder="Describe the task"
+                type="text"
+                value=""
+              />
+            </div>
+            <div
+              class="form-field"
+            >
+              <label
+                class="form-label"
+                for="developer-type"
+              >
+                Type
+              </label>
+              <select
+                class="form-input"
+                id="developer-type"
+                name="type"
+              >
+                <option
+                  value=""
+                >
+                  Select a type
+                </option>
+                <option
+                  value="Feature"
+                >
+                  Feature
+                </option>
+                <option
+                  value="Bug"
+                >
+                  Bug
+                </option>
+                <option
+                  value="Research"
+                >
+                  Research
+                </option>
+                <option
+                  value="Documentation"
+                >
+                  Documentation
+                </option>
+              </select>
+            </div>
+            <div
+              class="form-field"
+            >
+              <label
+                class="form-label"
+                for="developer-estimated-duration"
+              >
+                Estimated duration
+              </label>
+              <input
+                class="form-input"
+                id="developer-estimated-duration"
+                name="estimatedDuration"
+                placeholder="e.g. 2.5 hours"
+                type="text"
+                value=""
+              />
+            </div>
+          </div>
+          <div
+            class="form-footer developer-task-create-footer"
+          >
+            <button
+              class="btn btn-primary"
+              type="submit"
+            >
+              Create task
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+    <section
+      class="section-card"
+    >
+      <div
+        class="section-card__header"
+      >
+        <div>
+          <h2
+            class="section-card__title"
+          >
+            Total tasks: 1
+          </h2>
+        </div>
+      </div>
+      <div>
+        <div
+          class="developer-task-groups"
+          style=""
+        >
+          <div
+            class="developer-task-group__table-wrap table-wrap"
+          >
+            <table
+              class="data-table developer-task-group__table"
+            >
+              <thead>
+                <tr>
+                  <th>
+                    Task
+                  </th>
+                  <th>
+                    Type
+                  </th>
+                  <th>
+                    Status
+                  </th>
+                  <th>
+                    Created
+                  </th>
+                  <th>
+                    Estimated hours
+                  </th>
+                  <th>
+                    Finished
+                  </th>
+                  <th>
+                    Real Hours
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  class="developer-task-row"
+                >
+                  <td>
+                    <div
+                      class="developer-task-cell-task-wrap"
+                    >
+                      <div
+                        class="developer-task-cell-task"
+                      >
+                        Initial task
+                      </div>
+                      <button
+                        aria-label="Edit task"
+                        class="developer-task-row__edit-btn"
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="lucide lucide-pencil"
+                          fill="none"
+                          height="14"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          viewBox="0 0 24 24"
+                          width="14"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"
+                          />
+                          <path
+                            d="m15 5 4 4"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    Feature
+                  </td>
+                  <td>
+                    <select
+                      class="form-input developer-task-status-select developer-task-status--red"
+                    >
+                      <option
+                        value="Pendiente"
+                      >
+                        Pendiente
+                      </option>
+                      <option
+                        value="En curso"
+                      >
+                        En curso
+                      </option>
+                      <option
+                        value="Finalizada"
+                      >
+                        Finalizada
+                      </option>
+                    </select>
+                  </td>
+                  <td>
+                    Mar 09, 2026
+                  </td>
+                  <td>
+                    2 h
+                  </td>
+                  <td>
+                    N/A
+                  </td>
+                  <td>
+                    <div
+                      class="developer-task-row__end-cell"
+                    >
+                      <span>
+                        N/A
+                      </span>
+                      <button
+                        aria-label="Delete task"
+                        class="developer-task-row__delete-btn"
+                        type="button"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="lucide lucide-trash2 lucide-trash-2"
+                          fill="none"
+                          height="14"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          viewBox="0 0 24 24"
+                          width="14"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M10 11v6"
+                          />
+                          <path
+                            d="M14 11v6"
+                          />
+                          <path
+                            d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
+                          />
+                          <path
+                            d="M3 6h18"
+                          />
+                          <path
+                            d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+`;
