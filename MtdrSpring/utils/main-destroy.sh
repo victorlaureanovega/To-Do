@@ -68,3 +68,19 @@ oci iam auth-token delete \
   --user-id $TF_VAR_ociUserOcid \
   --auth-token-id $(oci iam auth-token list --user-id $TF_VAR_ociUserOcid --query "data[?description=='mtdr login'].id | [0]" --raw-output) \
   --force
+
+# 1. Force the script to wait for all background destroy tasks (os, repo, lb) to finish
+echo "Waiting for all background deletion processes to finish..."
+wait 
+
+# 2. Add a small buffer to allow OCI's backend to register the resource terminations
+echo "Waiting 60 seconds for OCI state to settle..."
+sleep 60
+
+# 3. Nuke the compartment via the OCI CLI
+echo "Nuking the compartment..."
+oci iam compartment delete \
+  --compartment-id $TF_VAR_ociCompartmentOcid \
+  --force
+
+echo "Destroy complete."
