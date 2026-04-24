@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const backendTarget = process.env.VITE_BACKEND_PROXY_TARGET || 'http://localhost:8080'
+const backendTarget = process.env.VITE_BACKEND_PROXY_TARGET || '/'
 
 // https://vite.dev/config/
 export default defineConfig({
