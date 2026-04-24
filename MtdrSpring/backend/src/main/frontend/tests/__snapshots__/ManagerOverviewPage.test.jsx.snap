@@ -1,0 +1,310 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ManagerOverviewPage > renders grouped team tasks and matches snapshot 1`] = `
+<div>
+  <section
+    class="page-header"
+  >
+    <div>
+      <h1>
+        Team Overview
+      </h1>
+      <p
+        class="page-header-subtitle"
+      >
+        Vista de tareas del equipo. Solo lectura: no expone acciones de edicion ni creacion.
+      </p>
+    </div>
+  </section>
+  <section
+    class="section-card"
+  >
+    <div
+      class="section-card__header"
+    >
+      <div>
+        <h2
+          class="section-card__title"
+        >
+          Team tasks
+        </h2>
+      </div>
+      <div
+        class="section-card__actions"
+      >
+        <div
+          class="filter-bar"
+        >
+          <div
+            class="filter-bar__controls"
+          >
+            <label
+              class="filter-bar__item"
+            >
+              <span
+                class="filter-bar__label"
+              >
+                Developer
+              </span>
+              <select
+                class="filter-bar__select"
+              >
+                <option
+                  value="All"
+                >
+                  All developers
+                </option>
+                <option
+                  value="Alice"
+                >
+                  Alice
+                </option>
+                <option
+                  value="Bob"
+                >
+                  Bob
+                </option>
+              </select>
+            </label>
+            <label
+              class="filter-bar__item"
+            >
+              <span
+                class="filter-bar__label"
+              >
+                Status
+              </span>
+              <select
+                class="filter-bar__select"
+              >
+                <option
+                  value="All"
+                >
+                  All statuses
+                </option>
+                <option
+                  value="To Do"
+                >
+                  To Do
+                </option>
+                <option
+                  value="In Progress"
+                >
+                  In Progress
+                </option>
+                <option
+                  value="Completed"
+                >
+                  Completed
+                </option>
+              </select>
+            </label>
+            <div
+              class="filter-bar__date-group"
+            >
+              <label
+                class="filter-bar__item"
+              >
+                <span
+                  class="filter-bar__label"
+                >
+                  Date
+                </span>
+                <div
+                  class="filter-bar__date-fields"
+                >
+                  <input
+                    aria-label="Start date"
+                    class="filter-bar__input"
+                    type="date"
+                    value=""
+                  />
+                  <span
+                    class="filter-bar__date-separator"
+                  >
+                    to
+                  </span>
+                  <input
+                    aria-label="End date"
+                    class="filter-bar__input"
+                    type="date"
+                    value=""
+                  />
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div
+        style="display: grid; gap: 1rem; padding: 1rem;"
+      >
+        <section
+          class="section-card"
+        >
+          <div
+            class="section-card__header"
+          >
+            <div>
+              <h2
+                class="section-card__title"
+              >
+                Alice
+              </h2>
+              <p
+                class="section-card__subtitle"
+              >
+                2 tasks
+              </p>
+            </div>
+          </div>
+          <div>
+            <div
+              class="table-wrap"
+            >
+              <table
+                class="data-table"
+              >
+                <thead>
+                  <tr>
+                    <th>
+                      Task
+                    </th>
+                    <th>
+                      Status
+                    </th>
+                    <th>
+                      Est. Duration
+                    </th>
+                    <th>
+                      Created
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <a
+                        class="table-link"
+                        data-discover="true"
+                        href="/tasks/1"
+                      >
+                        Build API schema
+                      </a>
+                    </td>
+                    <td>
+                      <span
+                        class="status-badge status-badge--in-progress status-badge--sm"
+                      >
+                        In Progress
+                      </span>
+                    </td>
+                    <td>
+                      4
+                    </td>
+                    <td />
+                  </tr>
+                  <tr>
+                    <td>
+                      <a
+                        class="table-link"
+                        data-discover="true"
+                        href="/tasks/3"
+                      >
+                        Write tests
+                      </a>
+                    </td>
+                    <td>
+                      <span
+                        class="status-badge status-badge--completed status-badge--sm"
+                      >
+                        Completed
+                      </span>
+                    </td>
+                    <td>
+                      3
+                    </td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section
+          class="section-card"
+        >
+          <div
+            class="section-card__header"
+          >
+            <div>
+              <h2
+                class="section-card__title"
+              >
+                Bob
+              </h2>
+              <p
+                class="section-card__subtitle"
+              >
+                1 tasks
+              </p>
+            </div>
+          </div>
+          <div>
+            <div
+              class="table-wrap"
+            >
+              <table
+                class="data-table"
+              >
+                <thead>
+                  <tr>
+                    <th>
+                      Task
+                    </th>
+                    <th>
+                      Status
+                    </th>
+                    <th>
+                      Est. Duration
+                    </th>
+                    <th>
+                      Created
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <a
+                        class="table-link"
+                        data-discover="true"
+                        href="/tasks/2"
+                      >
+                        Fix UI bug
+                      </a>
+                    </td>
+                    <td>
+                      <span
+                        class="status-badge status-badge--todo status-badge--sm"
+                      >
+                        To Do
+                      </span>
+                    </td>
+                    <td>
+                      2
+                    </td>
+                    <td />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </section>
+</div>
+`;

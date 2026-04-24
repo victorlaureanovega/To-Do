@@ -5,6 +5,7 @@ import ProtectedRoute from './ProtectedRoute'
 import { useAuth } from '../../hooks/useAuth'
 import { getRoleHomePath } from '../../utils/authRoutes'
 import AnalyticsPage from '../../pages/AnalyticsPage'
+import DeveloperAnalyticsPage from '../../pages/DeveloperAnalyticsPage'
 import DeveloperWorkspacePage from '../../pages/DeveloperWorkspacePage'
 import LoginPage from '../../pages/LoginPage'
 import ManagerOverviewPage from '../../pages/ManagerOverviewPage'
@@ -35,7 +36,7 @@ export default function AppRouter() {
             <Route path="/home" element={<RoleHomeRedirect />} />
             <Route path="/developer" element={<Navigate to="/developer/tasks" replace />} />
             <Route path="/developer/tasks" element={<DeveloperWorkspacePage view="tasks" />} />
-            <Route path="/developer/dashboard" element={<DeveloperWorkspacePage view="dashboard" />} />
+            <Route path="/developer/dashboard" element={<DeveloperAnalyticsPage />} />
             <Route path="/developer/ai" element={<DeveloperWorkspacePage view="ai" />} />
 
             <Route path="/manager" element={<Navigate to="/manager/tasks" replace />} />
