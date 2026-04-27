@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { GoogleGenAI } from '@google/genai'
+import { Sparkles } from 'lucide-react'
 import SectionCard from '../../../components/common/SectionCard'
 import { useAuth } from '../../../hooks/useAuth'
+import { isPendingOrOngoingTaskStatus, toEnglishTaskStatus } from '../../../utils/taskStatus'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 const geminiApiKey = (import.meta.env.VITE_GEMINI_API_KEY ?? import.meta.env.GEMINI_API_KEY ?? '').trim()
@@ -15,16 +17,9 @@ const getTaskStatus = (task) => String(
   ?? '',
 ).trim().toLowerCase()
 
-const isInProgressStatus = (task) => {
+const isPendingOrInProgressStatus = (task) => {
   const status = getTaskStatus(task)
-  return (
-    status.includes('ongoing')
-    || status.includes('in progress')
-    || status.includes('progress')
-    || status.includes('progreso')
-    || status.includes('curso')
-    || status.includes('en curso')
-  )
+  return isPendingOrOngoingTaskStatus(status)
 }
 
 const getTaskContent = (task) => String(
@@ -49,7 +44,7 @@ const getEstimatedHours = (task) => String(
 
 const getTaskId = (task, index) => String(task?.taskId ?? task?.id ?? `task-${index}`)
 
-const getTaskStatusLabel = (task) => String(task?.taskStatus ?? task?.status ?? task?.taskState ?? 'N/A')
+const getTaskStatusLabel = (task) => toEnglishTaskStatus(task?.taskStatus ?? task?.status ?? task?.taskState ?? 'N/A')
 
 const formatEstimatedHours = (task) => {
   const value = task?.estimatedDuration ?? task?.estimatedHours
@@ -99,12 +94,12 @@ export default function DeveloperAiPrioritization() {
   const [orderingError, setOrderingError] = useState(null)
   const [orderedTasks, setOrderedTasks] = useState([])
 
-  const inProgressTasks = useMemo(
-    () => allTasks.filter(isInProgressStatus),
+  const pendingAndInProgressTasks = useMemo(
+    () => allTasks.filter(isPendingOrInProgressStatus),
     [allTasks],
   )
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     setLoadingTasks(true)
     setTasksError(null)
 
@@ -138,13 +133,17 @@ export default function DeveloperAiPrioritization() {
     } finally {
       setLoadingTasks(false)
     }
-  }
+  }, [developerId])
+
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
 
   const orderWithAi = async () => {
     setOrderingError(null)
 
-    if (!inProgressTasks.length) {
-      setOrderingError(new Error('No in-progress tasks to prioritize'))
+    if (!pendingAndInProgressTasks.length) {
+      setOrderingError(new Error('No pending or in-progress tasks to prioritize'))
       return
     }
 
@@ -156,7 +155,7 @@ export default function DeveloperAiPrioritization() {
     setOrdering(true)
 
     try {
-      const prompt = `You are now a personal assistant for software engineer working at a big tech company. You have been task with organizing their pending activities by their priroity. you must take into consideration the task, the type, the esimated hours it will take, and the following specific instructions given by the engineer ${engineerPrompt}.\nReturn only an array of tasks, exactly like the one you recieved, but ordered by prirority.\n\nTasks array:\n${JSON.stringify(inProgressTasks)}`
+      const prompt = `You are now a personal assistant for software engineer working at a big tech company. You have been task with organizing their pending activities by their priroity. you must take into consideration the task, the type, the esimated hours it will take, and the following specific instructions given by the engineer ${engineerPrompt}.\nReturn only an array of tasks, exactly like the one you recieved, but ordered by prirority.\n\nTasks array:\n${JSON.stringify(pendingAndInProgressTasks)}`
 
       const response = await ai.models.generateContent({
         model: geminiModel,
@@ -180,13 +179,8 @@ export default function DeveloperAiPrioritization() {
   return (
     <div className="developer-task-board">
       <SectionCard
-        title="In-progress tasks"
+        title="Pending and in-progress tasks"
         subtitle={`${user?.name ?? user?.username ?? `Developer ${developerId || '?'}`} - source for AI prioritization`}
-        actions={(
-          <button type="button" className="btn-secondary" onClick={loadTasks} disabled={loadingTasks || ordering}>
-            {loadingTasks ? 'Loading tasks...' : 'Load my in-progress tasks'}
-          </button>
-        )}
         noPad
       >
         {tasksError && (
@@ -195,13 +189,13 @@ export default function DeveloperAiPrioritization() {
           </div>
         )}
 
-        {!tasksError && !loadingTasks && allTasks.length > 0 && inProgressTasks.length === 0 && (
+        {!tasksError && !loadingTasks && allTasks.length > 0 && pendingAndInProgressTasks.length === 0 && (
           <div style={{ padding: '1rem' }}>
-            No tasks with ongoing or in-progress status were found for this user.
+            No tasks with Pending or Ongoing status were found for this user.
           </div>
         )}
 
-        {!tasksError && inProgressTasks.length > 0 && (
+        {!tasksError && pendingAndInProgressTasks.length > 0 && (
           <div className="table-wrap">
             <table className="data-table">
               <thead>
@@ -213,7 +207,7 @@ export default function DeveloperAiPrioritization() {
                 </tr>
               </thead>
               <tbody>
-                {inProgressTasks.map((task, index) => (
+                {pendingAndInProgressTasks.map((task, index) => (
                   <tr key={getTaskId(task, index)}>
                     <td>{getTaskContent(task)}</td>
                     <td>{getTaskType(task)}</td>
@@ -231,10 +225,10 @@ export default function DeveloperAiPrioritization() {
         title="AI ordering controls"
         subtitle="Provide additional guidance before generating your priority order"
       >
-        <div className="task-form" style={{ gap: '0.75rem' }}>
+        <div className="task-form developer-ai-controls">
           <input
             type="text"
-            className="form-input"
+            className="form-input developer-ai-prompt-input"
             placeholder="Ask our AI for any special consideration on your task prioritization"
             value={engineerPrompt}
             onChange={(event) => setEngineerPrompt(event.target.value)}
@@ -243,10 +237,11 @@ export default function DeveloperAiPrioritization() {
 
           <button
             type="button"
-            className="btn-primary"
+            className="btn btn-ghost developer-ai-order-btn"
             onClick={orderWithAi}
             disabled={ordering || loadingTasks}
           >
+            <Sparkles size={14} />
             {ordering ? 'Ordering with AI...' : 'Order my tasks with AI'}
           </button>
 

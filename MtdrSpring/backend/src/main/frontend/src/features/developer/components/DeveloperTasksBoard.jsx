@@ -6,9 +6,14 @@ import EmptyState from '../../../components/common/EmptyState'
 import SkeletonCard from '../../../components/common/SkeletonCard'
 import Modal from '../../../components/common/Modal'
 import { useAuth } from '../../../hooks/useAuth'
+import { getCanonicalTaskStatus, toBackendTaskStatus, toEnglishTaskStatus } from '../../../utils/taskStatus'
 
 const DEFAULT_TASK_TYPES = ['Feature', 'Bug', 'Research', 'Documentation']
-const STATUS_OPTIONS = ['Pendiente', 'En curso', 'Finalizada']
+const STATUS_OPTIONS = [
+  { value: 'Pendiente', label: 'Pending' },
+  { value: 'En curso', label: 'Ongoing' },
+  { value: 'Finalizada', label: 'Finished' },
+]
 
 const EMPTY_VALUE = 'N/A'
 
@@ -51,7 +56,7 @@ const formatDate = (value) => {
 }
 
 const getTaskType = (task) => {
-  const typeName = pickFirstValue(task?.type?.name, task?.typeName, task?.taskType)
+  const typeName = pickFirstValue(task?.type?.name, task?.type?.typeName, task?.typeName, task?.taskType)
   if (typeName && String(typeName).trim()) {
     return String(typeName)
   }
@@ -70,35 +75,21 @@ const getTaskStatusLabel = (task) => {
     return EMPTY_VALUE
   }
 
-  return String(value)
+  return toEnglishTaskStatus(value)
 }
 
 const getTaskStatusTone = (task) => {
-  const normalized = String(
-    pickFirstValue(task?.taskStatus, task?.status, task?.taskState) ?? '',
-  ).trim().toLowerCase()
+  const normalized = getCanonicalTaskStatus(pickFirstValue(task?.taskStatus, task?.status, task?.taskState))
 
-  if (
-    normalized.includes('final')
-    || normalized.includes('done')
-    || normalized.includes('complete')
-  ) {
+  if (normalized === 'finished') {
     return 'developer-task-status--green'
   }
 
-  if (
-    normalized.includes('curso')
-    || normalized.includes('progress')
-    || normalized.includes('ongoing')
-  ) {
+  if (normalized === 'ongoing') {
     return 'developer-task-status--yellow'
   }
 
-  if (
-    normalized.includes('pend')
-    || normalized.includes('todo')
-    || normalized.includes('to do')
-  ) {
+  if (normalized === 'pending') {
     return 'developer-task-status--red'
   }
 
@@ -140,6 +131,24 @@ const getTaskRowId = (task, index) => String(
 
 const getTaskNumericId = (task) => Number(task?.taskId ?? task?.id)
 
+const getTaskTypeId = (task) => Number(
+  pickFirstValue(task?.type?.typeId, task?.type?.id, task?.typeId),
+)
+
+const getSprintNumber = (task) => {
+  // Only check _Sprint field (from get_Sprint() serialization)
+  const sprintValue = task?._Sprint
+  
+  if (sprintValue != null && (typeof sprintValue === 'number' || (typeof sprintValue === 'string' && String(sprintValue).trim()))) {
+    const n = Number(sprintValue)
+    if (Number.isFinite(n)) return n
+  }
+
+  return null
+}
+
+const formatSprint = (value) => (value == null ? EMPTY_VALUE : String(value))
+
 const parseHours = (value) => {
   const normalized = String(value ?? '').trim().replace(',', '.')
   if (!normalized) {
@@ -162,11 +171,13 @@ export default function DeveloperTasksBoard() {
     task: '',
     type: '',
     estimatedDuration: '',
+    sprint: '',
   })
   const [draftForm, setDraftForm] = useState({
     task: '',
     type: '',
     estimatedDuration: '',
+    sprint: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -195,8 +206,8 @@ export default function DeveloperTasksBoard() {
 
     const mappedByName = {}
     for (const task of tasks) {
-      const typeName = pickFirstValue(task?.type?.name, task?.typeName, task?.taskType)
-      const typeId = task?.type?.typeId ?? task?.typeId
+      const typeName = pickFirstValue(task?.type?.name, task?.type?.typeName, task?.typeName, task?.taskType)
+      const typeId = pickFirstValue(task?.type?.typeId, task?.type?.id, task?.typeId)
 
       if (!hasValue(typeName) || !hasValue(typeId)) {
         continue
@@ -306,6 +317,12 @@ export default function DeveloperTasksBoard() {
       return
     }
 
+    const sprintNumber = draftForm.sprint ? Number(String(draftForm.sprint).trim()) : null
+    if (draftForm.sprint && (!Number.isFinite(sprintNumber) || !Number.isInteger(sprintNumber))) {
+      setError(new Error('Sprint must be an integer'))
+      return
+    }
+
     const selectedType = taskTypesByName[normalizeTaskTypeName(draftForm.type)]
     if (!selectedType?.id) {
       setError(new Error('Selected task type is not available in backend catalog'))
@@ -328,6 +345,7 @@ export default function DeveloperTasksBoard() {
           estimatedDuration,
           userId: Number(developerId),
           typeId: selectedType.id,
+          _Sprint: sprintNumber,
           sprintId: null,
         }),
       })
@@ -340,6 +358,7 @@ export default function DeveloperTasksBoard() {
         task: '',
         type: '',
         estimatedDuration: '',
+        sprint: '',
       })
 
       await loadDeveloperTaskGroups()
@@ -361,6 +380,7 @@ export default function DeveloperTasksBoard() {
       estimatedDuration: currentEstimated === EMPTY_VALUE || currentEstimated == null
         ? ''
         : String(currentEstimated),
+      sprint: getSprintNumber(task) == null ? '' : String(getSprintNumber(task)),
     })
     setEditingTaskId(rowId)
   }
@@ -379,6 +399,7 @@ export default function DeveloperTasksBoard() {
       task: '',
       type: '',
       estimatedDuration: '',
+      sprint: '',
     })
   }
 
@@ -394,13 +415,24 @@ export default function DeveloperTasksBoard() {
     const resolvedEstimatedRaw = taskEditDraft.estimatedDuration.trim() || String(getEstimatedDuration(task) ?? '')
     const resolvedEstimatedDuration = parseHours(resolvedEstimatedRaw)
 
+    const resolvedSprintRaw = (taskEditDraft.sprint ? taskEditDraft.sprint.trim() : '') || (getSprintNumber(task) != null ? String(getSprintNumber(task)) : '')
+    const resolvedSprintNumber = resolvedSprintRaw ? Number(String(resolvedSprintRaw).trim()) : null
+
+    if (resolvedSprintRaw && (!Number.isFinite(resolvedSprintNumber) || !Number.isInteger(resolvedSprintNumber))) {
+      setError(new Error('Sprint must be an integer'))
+      return
+    }
+
     if (resolvedEstimatedDuration == null) {
       setError(new Error('Estimated duration must be a valid number'))
       return
     }
 
     const selectedType = taskTypesByName[normalizeTaskTypeName(resolvedTypeName)]
-    if (!selectedType?.id) {
+    const fallbackTypeId = getTaskTypeId(task)
+    const resolvedTypeId = Number(selectedType?.id ?? fallbackTypeId)
+
+    if (!Number.isFinite(resolvedTypeId)) {
       setError(new Error('Selected task type is not available in backend catalog'))
       return
     }
@@ -420,7 +452,8 @@ export default function DeveloperTasksBoard() {
           content: resolvedContent,
           estimatedDuration: resolvedEstimatedDuration,
           userId: Number(developerId),
-          typeId: selectedType.id,
+          typeId: resolvedTypeId,
+          sprintNumber: resolvedSprintNumber,
           sprintId: task?.sprint?.sprintId ?? task?.sprintId ?? null,
         }),
       })
@@ -445,7 +478,7 @@ export default function DeveloperTasksBoard() {
       return
     }
 
-    if (!STATUS_OPTIONS.includes(nextStatus)) {
+    if (!STATUS_OPTIONS.some((option) => option.value === nextStatus)) {
       setError(new Error('Selected status is invalid'))
       return
     }
@@ -553,6 +586,19 @@ export default function DeveloperTasksBoard() {
             </div>
 
             <div className="form-field">
+              <label htmlFor="developer-sprint" className="form-label">Sprint (number)</label>
+              <input
+                id="developer-sprint"
+                name="sprint"
+                type="number"
+                className="form-input"
+                placeholder="e.g. 3"
+                value={draftForm.sprint}
+                onChange={handleDraftChange}
+              />
+            </div>
+
+            <div className="form-field">
               <label htmlFor="developer-estimated-duration" className="form-label">Estimated duration</label>
               <input
                 id="developer-estimated-duration"
@@ -604,6 +650,7 @@ export default function DeveloperTasksBoard() {
                   <tr>
                     <th>Task</th>
                     <th>Type</th>
+                    <th>Sprint</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Estimated hours</th>
@@ -620,10 +667,8 @@ export default function DeveloperTasksBoard() {
                     const isEditing = editingTaskId === rowId
                     const numericTaskId = String(getTaskNumericId(task) || '')
                     const isRowBusy = rowActionTaskId === numericTaskId
-                    const currentStatusLabel = getTaskStatusLabel(task)
-                    const normalizedCurrentStatus = STATUS_OPTIONS.find(
-                      (status) => status.toLowerCase() === String(currentStatusLabel).trim().toLowerCase(),
-                    ) ?? STATUS_OPTIONS[0]
+                    const rawStatusValue = pickFirstValue(task?.taskStatus, task?.status, task?.taskState)
+                    const normalizedCurrentStatus = toBackendTaskStatus(rawStatusValue) ?? STATUS_OPTIONS[0].value
 
                     return (
                     <Fragment key={rowId}>
@@ -643,6 +688,7 @@ export default function DeveloperTasksBoard() {
                           </div>
                         </td>
                         <td>{displayType}</td>
+                        <td>{formatSprint(getSprintNumber(task))}</td>
                         <td>
                           <select
                             className={`form-input developer-task-status-select ${getTaskStatusTone(task)}`}
@@ -650,8 +696,8 @@ export default function DeveloperTasksBoard() {
                             onChange={(event) => updateTaskStatus(task, event.target.value)}
                             disabled={isRowBusy || isSavingTask}
                           >
-                            {STATUS_OPTIONS.map((statusValue) => (
-                              <option key={statusValue} value={statusValue}>{statusValue}</option>
+                            {STATUS_OPTIONS.map((statusOption) => (
+                              <option key={statusOption.value} value={statusOption.value}>{statusOption.label}</option>
                             ))}
                           </select>
                         </td>
@@ -676,7 +722,7 @@ export default function DeveloperTasksBoard() {
 
                       {isEditing && (
                         <tr className="developer-task-edit-row">
-                          <td colSpan={7}>
+                          <td colSpan={8}>
                             <div className="developer-task-edit-panel">
                               <div className="developer-task-edit-grid">
                                 <div className="form-field">
@@ -705,6 +751,18 @@ export default function DeveloperTasksBoard() {
                                       <option key={typeName} value={typeName}>{typeName}</option>
                                     ))}
                                   </select>
+                                </div>
+
+                                <div className="form-field">
+                                  <label htmlFor={`task-sprint-${rowId}`} className="form-label">Sprint (number)</label>
+                                  <input
+                                    id={`task-sprint-${rowId}`}
+                                    name="sprint"
+                                    type="number"
+                                    className="form-input"
+                                    value={taskEditDraft.sprint}
+                                    onChange={handleTaskEditFieldChange}
+                                  />
                                 </div>
 
                                 <div className="form-field">

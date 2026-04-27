@@ -13,6 +13,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { taskService } from '../../services/api/taskService'
 import { analyticsService } from '../../services/api/analyticsService'
 import { resolveTeamIdFromUser } from '../../utils/teamScope'
+import { toEnglishTaskStatus } from '../../utils/taskStatus'
 
 export const DataContext = createContext(null)
 
@@ -25,7 +26,7 @@ const mapBackendTaskToUiTask = (task) => {
 		id: String(task?.taskId ?? ''),
 		title: task?.content ? task.content.slice(0, 80) : `Task ${task?.taskId ?? ''}`,
 		description: task?.content ?? '',
-		status: task?.taskStatus ?? 'Unknown',
+		status: toEnglishTaskStatus(task?.taskStatus ?? task?.status ?? task?.taskState),
 		estimatedDuration: task?.estimatedDuration != null ? String(task.estimatedDuration) : '',
 		createdAt: task?.creationDate ? String(task.creationDate).split('T')[0] : '',
 		assignee: fullName || task?.user?.username || null,

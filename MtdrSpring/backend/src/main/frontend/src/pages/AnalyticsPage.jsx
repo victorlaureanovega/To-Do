@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import PageHeader from '../components/common/PageHeader'
 import AnalyticsFilters from '../features/analytics/components/AnalyticsFilters'
-import DeveloperAverageHoursCard from '../features/analytics/components/DeveloperAverageHoursCard'
+// import DeveloperAverageHoursCard from '../features/analytics/components/DeveloperAverageHoursCard'
 import TeamAverageFinishedTasksCard from '../features/analytics/components/TeamAverageFinishedTasksCard'
 import TeamAverageWorkedHoursCard from '../features/analytics/components/TeamAverageWorkedHoursCard'
 import KpiSection from '../features/analytics/components/KpiSection'
@@ -54,9 +54,43 @@ const normalizeStatusBucket = (taskStatus) => {
 }
 
 const getTaskTypeName = (task) => {
-  const rawType = task?.type?.typeName ?? task?.typeName ?? task?.taskType ?? 'Unknown'
+  const rawType = task?.type?.name ?? task?.type?.typeName ?? task?.typeName ?? task?.taskType ?? 'Unknown'
   const normalized = String(rawType ?? '').trim()
   return normalized || 'Unknown'
+}
+
+const toNumericCount = (...values) => {
+  for (const value of values) {
+    const numeric = Number(value)
+    if (Number.isFinite(numeric)) {
+      return numeric
+    }
+  }
+  return 0
+}
+
+const groupTasksByCreationDate = (tasks) => {
+  const byDate = tasks.reduce((acc, task) => {
+    const normalizedDate = normalizeChartDate(
+      task?.creationDate
+      ?? task?.taskDate
+      ?? task?.date
+      ?? task?.createdAt,
+    )
+
+    const key = normalizedDate && normalizedDate !== 'N/A' ? normalizedDate : 'N/A'
+    const current = acc.get(key) ?? { date: key, registered: 0, completed: 0 }
+
+    current.registered += 1
+    if (isCompletedStatus(task?.taskStatus ?? task?.status ?? task?.taskState)) {
+      current.completed += 1
+    }
+
+    acc.set(key, current)
+    return acc
+  }, new Map())
+
+  return Array.from(byDate.values()).sort((a, b) => String(a.date).localeCompare(String(b.date)))
 }
 
 const resolveUserId = (user) => {
@@ -327,20 +361,37 @@ export default function AnalyticsPage({ lockedDeveloperId = null }) {
         const rawTasksByDate = await tasksByDateResponse.json()
         const formattedTasksByDate = Array.isArray(rawTasksByDate)
           ? rawTasksByDate.map((item) => ({
-              date: normalizeChartDate(item?.date ?? item?.taskDate ?? item?.creationDate),
-              registered: Number(item.registered ?? 0),
-              completed: Number(item.completed ?? 0),
+              date: normalizeChartDate(
+                item?.date
+                ?? item?.taskDate
+                ?? item?.creationDate
+                ?? item?.TASKDATE,
+              ),
+              registered: toNumericCount(item?.registered, item?.REGISTERED, item?.total, item?.count),
+              completed: toNumericCount(item?.completed, item?.COMPLETED, item?.finished),
             }))
           : []
 
         if (!isCancelled) {
-          setTasksByDateData(formattedTasksByDate)
+          const normalizedData = formattedTasksByDate
+            .filter((item) => item?.date)
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+
+          setTasksByDateData(normalizedData)
+          setTasksByDateError(null)
         }
       } catch (error) {
         if (!isCancelled) {
-          setTasksByDateError({
-            message: error instanceof Error ? error.message : 'Failed to load tasks by date.',
-          })
+          const fallbackByDate = groupTasksByCreationDate(scopedTasks)
+
+          if (fallbackByDate.length > 0) {
+            setTasksByDateData(fallbackByDate)
+            setTasksByDateError(null)
+          } else {
+            setTasksByDateError({
+              message: error instanceof Error ? error.message : 'Failed to load tasks by date.',
+            })
+          }
         }
       } finally {
         if (!isCancelled) {
@@ -436,8 +487,8 @@ export default function AnalyticsPage({ lockedDeveloperId = null }) {
         developerOptions={developerOptions}
       />
 
-      <div className="kpi-grid">
-        <DeveloperAverageHoursCard selectedDeveloperId={selectedDeveloperId} />
+      <div className="kpi-grid kpi-grid--2">
+        {/* <DeveloperAverageHoursCard selectedDeveloperId={selectedDeveloperId} /> */}
         <TeamAverageFinishedTasksCard selectedDeveloperId={isDeveloperScoped ? forcedDeveloperId : null} />
         <TeamAverageWorkedHoursCard selectedDeveloperId={isDeveloperScoped ? forcedDeveloperId : null} />
       </div>

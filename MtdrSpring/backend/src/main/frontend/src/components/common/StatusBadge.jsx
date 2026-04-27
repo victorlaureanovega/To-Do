@@ -1,6 +1,12 @@
 import clsx from 'clsx'
 
 const STATUS_MAP = {
+  Pending: 'todo',
+  Ongoing: 'in-progress',
+  Finished: 'completed',
+  Pendiente: 'todo',
+  'En curso': 'in-progress',
+  Finalizada: 'completed',
   'To Do': 'todo',
   'In Progress': 'in-progress',
   Completed: 'completed',

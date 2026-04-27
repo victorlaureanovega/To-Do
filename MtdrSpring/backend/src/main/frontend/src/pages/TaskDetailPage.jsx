@@ -4,6 +4,7 @@ import PageHeader from '../components/common/PageHeader'
 import { useData } from '../hooks/useData'
 import SkeletonCard from '../components/common/SkeletonCard'
 import EmptyState from '../components/common/EmptyState'
+import { isFinishedTaskStatus } from '../utils/taskStatus'
 
 export default function TaskDetailPage() {
   const { taskId } = useParams()
@@ -71,7 +72,7 @@ export default function TaskDetailPage() {
           </div>
           <div>
             <dt>Finished at</dt>
-            <dd>{task.status === 'Completed' ? task.finishedAt || 'Not recorded' : 'Not finished'}</dd>
+            <dd>{isFinishedTaskStatus(task.status) ? task.finishedAt || 'Not recorded' : 'Not finished'}</dd>
           </div>
         </dl>
       </section>

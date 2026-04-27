@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Pencil, Trash2, CheckCircle2 } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge'
+import { isFinishedTaskStatus } from '../../utils/taskStatus'
 
 /**
  * TaskTable
@@ -42,7 +43,7 @@ export default function TaskTable({ tasks = [], onEdit, onDelete, onComplete, re
               {!readOnly && (
                 <td>
                   <div className="table-actions">
-                    {task.status !== 'Completed' && (
+                    {!isFinishedTaskStatus(task.status) && (
                       <button
                         type="button"
                         className="task-action task-action--complete"

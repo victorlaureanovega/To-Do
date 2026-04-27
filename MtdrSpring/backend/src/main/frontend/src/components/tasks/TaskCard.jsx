@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Clock, Pencil, Trash2, CheckCircle2 } from 'lucide-react'
 import StatusBadge from '../common/StatusBadge'
+import { isFinishedTaskStatus } from '../../utils/taskStatus'
 
 /**
  * TaskCard
@@ -41,7 +42,7 @@ export default function TaskCard({ task, onEdit, onDelete, onComplete, readOnly 
 
       {!readOnly && (
         <div className="task-card__actions">
-          {task.status !== 'Completed' && (
+          {!isFinishedTaskStatus(task.status) && (
             <button
               type="button"
               className="task-action task-action--complete"

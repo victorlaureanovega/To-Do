@@ -39,6 +39,10 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.kpi-grid--2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .kpi-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
@@ -376,34 +380,43 @@
 
 .developer-task-group__table-wrap {
   padding: 0.9rem;
-  overflow-x: visible;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 .developer-task-group__table {
   table-layout: fixed;
   width: 100%;
+  border-collapse: collapse;
 }
 
 .developer-task-group__table th:nth-child(1) {
-  width: 32%;
+  width: 24%;
 }
 
 .developer-task-group__table th:nth-child(2) {
-  width: 11%;
+  width: 10%;
 }
 
 .developer-task-group__table th:nth-child(3) {
-  width: 9%;
+  width: 8%;
 }
 
-.developer-task-group__table th:nth-child(4),
-.developer-task-group__table th:nth-child(6) {
-  width: 13%;
+.developer-task-group__table th:nth-child(4) {
+  width: 10%;
 }
 
-.developer-task-group__table th:nth-child(5),
+.developer-task-group__table th:nth-child(5) {
+  width: 12%;
+}
+
+.developer-task-group__table th:nth-child(6),
+.developer-task-group__table th:nth-child(8) {
+  width: 10%;
+}
+
 .developer-task-group__table th:nth-child(7) {
-  width: 11%;
+  width: 12%;
 }
 
 .developer-task-group__table th,
@@ -411,6 +424,9 @@
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+  padding: 0.75rem 0.5rem;
+  line-height: 1.4;
+  vertical-align: top;
 }
 
 .developer-task-group__table.data-table th,
@@ -594,11 +610,12 @@
 }
 
 .developer-task-status-select {
-  min-width: 8.75rem;
+  width: 100%;
+  min-width: 0;
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 0.2rem 1.6rem 0.2rem 0.5rem;
+  padding: 0.18rem 1.25rem 0.18rem 0.48rem;
   height: auto;
 }
 
@@ -1174,7 +1191,7 @@
 .form-input.developer-task-status-select {
   border-radius: 999px;
   font-weight: 700;
-  min-width: 8.75rem;
+  min-width: 0;
 }
 
 .form-input.developer-task-status-select.developer-task-status--red {
@@ -1259,6 +1276,38 @@
 
 .btn-ghost:hover {
   background: rgba(88, 137, 208, 0.24);
+}
+
+.developer-ai-order-btn {
+  align-self: stretch;
+  min-height: 2.65rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  gap: 0.4rem;
+}
+
+.developer-ai-controls {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.developer-ai-prompt-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .developer-ai-controls {
+    flex-direction: column;
+  }
+
+  .developer-ai-order-btn {
+    width: 100%;
+  }
 }
 
 /* Analytics charts */
