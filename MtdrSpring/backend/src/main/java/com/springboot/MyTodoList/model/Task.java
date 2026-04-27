@@ -50,6 +50,9 @@ public class Task {
     @JoinColumn(name = "sprintId") // Sin 'nullable = false' para permitir tareas en el Backlog
     private Sprint sprint;
 
+    @Column(name = "sprint")
+    private Integer sprint_;
+
     public Task() {}
 
     // Getters y Setters
@@ -91,4 +94,7 @@ public class Task {
 
     public Sprint getSprint() { return sprint; }
     public void setSprint(Sprint sprint) { this.sprint = sprint; }
+
+    public Integer get_Sprint() { return sprint_; }
+    public void set_Sprint(Integer sprint_) { this.sprint_ = sprint_; }
 }

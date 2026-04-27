@@ -128,6 +128,8 @@ public class TaskController {
         
         task.setType(taskTypeRepository.findById(dto.getTypeId())
             .orElseThrow(() -> new RuntimeException("Tipo de tarea no encontrado")));
+
+        task.set_Sprint(dto.getSprintNumber());
         
         // El sprint es opcional (puede ser null para el Backlog)
         if (dto.getSprintId() != null) {
@@ -148,6 +150,11 @@ public class TaskController {
         // Actualizar campos básicos
         task.setContent(dto.getContent());
         task.setEstimatedDuration(dto.getEstimatedDuration());
+
+        // Actualizar el valor numérico del sprint
+        if (dto.getSprintNumber() != null) {
+            task.set_Sprint(dto.getSprintNumber());
+        }
 
         // Actualizar relaciones (sólo si los IDs vienen en el DTO)
         if (dto.getUserId() != null) {
