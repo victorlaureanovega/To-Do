@@ -9,7 +9,9 @@ public enum BotLabels {
 	UNDO("UNDO"),
 	DELETE("DELETE"),
 	MY_TODO_LIST("MY TODO LIST"),
-	DASH("-");
+	DASH("-"),
+	CHANGE_STATUS("STATUS"),
+	STATUS_SEP("@");
 
 	private String label;
 

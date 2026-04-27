@@ -164,11 +164,22 @@ public class BotActions {
 
         // Tareas Pendientes / En curso
         allTasks.stream()
+        /*
             .filter(t -> !"Finalizada".equals(t.getTaskStatus()))
             .forEach(t -> {
                 KeyboardRow row = new KeyboardRow();
                 row.add(t.getContent());
                 row.add(t.getTaskId() + BotLabels.DASH.getLabel() + BotLabels.DONE.getLabel());
+                keyboard.add(row);
+            });*/
+            .filter(t -> !"Finalizada".equals(t.getTaskStatus()))
+            .forEach(t -> {
+                KeyboardRow row = new KeyboardRow();
+                row.add(t.getContent());
+                // Botón para finalizar
+                row.add(t.getTaskId() + BotLabels.DASH.getLabel() + BotLabels.DONE.getLabel());
+                // Botón para cambiar estado
+                row.add(t.getTaskId() + BotLabels.STATUS_SEP.getLabel() + BotLabels.CHANGE_STATUS.getLabel());
                 keyboard.add(row);
             });
 
@@ -195,6 +206,27 @@ public class BotActions {
         BotHelper.sendMessageToTelegram(chatId, BotMessages.TYPE_NEW_TODO_ITEM.getMessage(), telegramClient);
         
         exit = true; 
+    }
+
+    public void fnChangeStatus() {
+        if (!requestText.contains(BotLabels.CHANGE_STATUS.getLabel()) || exit) return;
+
+        try {
+            // Extraer el ID antes del @
+            Long id = Long.valueOf(requestText.split(BotLabels.STATUS_SEP.getLabel())[0]);
+            
+            // Crear un teclado temporal para elegir el estado
+            ReplyKeyboardMarkup statusKeyboard = ReplyKeyboardMarkup.builder()
+                .keyboardRow(new KeyboardRow(id + " @ Pendiente", id + " @ En curso"))
+                .keyboardRow(new KeyboardRow(BotLabels.SHOW_MAIN_SCREEN.getLabel()))
+                .resizeKeyboard(true)
+                .build();
+
+            BotHelper.sendMessageToTelegram(chatId, "Select the new status for task " + id + ":", telegramClient, statusKeyboard);
+        } catch (Exception e) {
+            logger.error("Error in fnChangeStatus: " + e.getMessage());
+        }
+        exit = true;
     }
     
     public void fnElse() {
@@ -224,6 +256,35 @@ public class BotActions {
                 }
             } catch (Exception e) {
                 // Si falla, no era un registro de tiempo, seguimos con la creación de tarea normal
+            }
+        }
+
+        if (requestText.contains(BotLabels.STATUS_SEP.getLabel()) && !requestText.contains(BotLabels.CHANGE_STATUS.getLabel())) {
+            try {
+                String[] parts = requestText.split(BotLabels.STATUS_SEP.getLabel());
+                Long id = Long.parseLong(parts[0].trim());
+                String newStatus = parts[1].trim();
+
+                taskService.findById(id).ifPresent(task -> {
+                    task.setTaskStatus(newStatus);
+                    
+                    // Lógica extra si se marca como finalizada desde aquí
+                    /*
+                    if ("Finalizada".equalsIgnoreCase(newStatus)) {
+                        task.setEverFinished(1);
+                        task.setFinishDate(new java.sql.Date(System.currentTimeMillis()));
+                        BotHelper.sendMessageToTelegram(chatId, "Task #" + id + " marked as Finalizada. \nDon't forget to register your time with: " + id + " / [hours]", telegramClient);
+                    } else {
+                        BotHelper.sendMessageToTelegram(chatId, "Status updated to: " + newStatus, telegramClient);
+                    }*/
+                    BotHelper.sendMessageToTelegram(chatId, "Task " + task.getTaskId() + " status updated to: " + newStatus, telegramClient);
+                    
+                    taskService.save(task);
+                });
+                exit = true;
+                return;
+            } catch (Exception e) {
+                logger.error("Error processing status change: " + e.getMessage());
             }
         }
     
