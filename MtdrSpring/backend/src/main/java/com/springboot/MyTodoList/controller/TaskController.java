@@ -83,7 +83,7 @@ public class TaskController {
 
     // Get total estimated and worked hours by a developer
     @GetMapping("/hours/by-developer/{developerId}")
-    public DeveloperHours getHoursByDeveloper(@PathVariable Long developerId) {
+    public List<DeveloperHours> getHoursByDeveloper(@PathVariable Long developerId) {
         return taskRepository.getDeveloperHours(developerId);
     }
 

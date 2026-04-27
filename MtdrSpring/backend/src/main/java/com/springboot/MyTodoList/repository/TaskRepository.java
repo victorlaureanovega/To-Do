@@ -58,10 +58,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     Float getAverageFinishedTasksByDev(@Param("userId") Long userId);
 
     // Obtener el total de horas estimadas y trabajadas por un desarrollador (manejando nulos como 0)
-    @Query("SELECT COALESCE(SUM(t.estimatedDuration), 0.0) AS totalEstimatedHours, " +
-           "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
-           "FROM Task t WHERE t.user.userId = :developerId")
-    DeveloperHours getDeveloperHours(@Param("developerId") Long developerId);
+    @Query("SELECT t.sprint_ AS sprint, " +
+       "COALESCE(SUM(CAST(t.estimatedDuration AS double)), 0.0) AS totalEstimatedHours, " +
+       "COALESCE(SUM(t.totalHoursWorked), 0.0) AS totalWorkedHours " +
+       "FROM Task t " +
+       "WHERE t.user.userId = :developerId " +
+       "GROUP BY t.sprint_ " +
+       "ORDER BY t.sprint_ ASC")
+    List<DeveloperHours> getDeveloperHours(@Param("developerId") Long developerId);
 
     // Obtener la tasa de retrabajo de un equipo
     @Query("SELECT " +
