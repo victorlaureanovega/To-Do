@@ -12,7 +12,7 @@ const DEFAULT_TASK_TYPES = ['Feature', 'Bug', 'Research', 'Documentation']
 const TASK_TYPE_MAPPING = {
   feature: { id: 1, name: 'Feature' },
   bug: { id: 2, name: 'Bug' },
-  research: { id: 3, name: 'Reasearch' },
+  research: { id: 3, name: 'Research' },
   documentation: { id: 4, name: 'Documentation' },
 }
 const STATUS_OPTIONS = [
