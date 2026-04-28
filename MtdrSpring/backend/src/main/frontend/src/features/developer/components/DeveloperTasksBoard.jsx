@@ -334,20 +334,22 @@ export default function DeveloperTasksBoard() {
 
     try {
       const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks` : '/api/tasks'
+      const requestPayload = {
+        content: draftForm.task.trim(),
+        estimatedDuration,
+        userId: Number(developerId),
+        typeId: selectedType.id,
+        _Sprint: sprintNumber,
+        sprintId: null,
+      }
+      console.log('Creating task with payload:', requestPayload)
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          content: draftForm.task.trim(),
-          estimatedDuration,
-          userId: Number(developerId),
-          typeId: selectedType.id,
-          _Sprint: sprintNumber,
-          sprintId: null,
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
       if (!response.ok) {
@@ -442,20 +444,22 @@ export default function DeveloperTasksBoard() {
 
     try {
       const endpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks/${taskId}` : `/api/tasks/${taskId}`
+      const requestPayload = {
+        content: resolvedContent,
+        estimatedDuration: resolvedEstimatedDuration,
+        userId: Number(developerId),
+        typeId: resolvedTypeId,
+        sprintNumber: resolvedSprintNumber,
+        sprintId: task?.sprint?.sprintId ?? task?.sprintId ?? null,
+      }
+      console.log('Saving task edit with payload:', requestPayload)
       const response = await fetch(endpoint, {
         method: 'PUT',
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          content: resolvedContent,
-          estimatedDuration: resolvedEstimatedDuration,
-          userId: Number(developerId),
-          typeId: resolvedTypeId,
-          sprintNumber: resolvedSprintNumber,
-          sprintId: task?.sprint?.sprintId ?? task?.sprintId ?? null,
-        }),
+        body: JSON.stringify(requestPayload),
       })
 
       if (!response.ok) {
