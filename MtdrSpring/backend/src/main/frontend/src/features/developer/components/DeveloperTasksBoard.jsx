@@ -178,6 +178,7 @@ export default function DeveloperTasksBoard() {
     type: '',
     estimatedDuration: '',
     sprint: '',
+    realDuration: '',
   })
   const [draftForm, setDraftForm] = useState({
     task: '',
@@ -345,6 +346,7 @@ export default function DeveloperTasksBoard() {
     const currentTask = getTaskContent(task)
     const currentType = getTaskType(task)
     const currentEstimated = getEstimatedDuration(task)
+    const currentReal = getRealDuration(task)
 
     setTaskEditDraft({
       task: currentTask === EMPTY_VALUE ? '' : String(currentTask),
@@ -353,6 +355,7 @@ export default function DeveloperTasksBoard() {
         ? ''
         : String(currentEstimated),
       sprint: getSprintNumber(task) == null ? '' : String(getSprintNumber(task)),
+      realDuration: currentReal === EMPTY_VALUE || currentReal == null ? '' : String(currentReal),
     })
     setEditingTaskId(rowId)
   }
@@ -372,6 +375,7 @@ export default function DeveloperTasksBoard() {
       type: '',
       estimatedDuration: '',
       sprint: '',
+      realDuration: '',
     })
   }
 
@@ -386,6 +390,9 @@ export default function DeveloperTasksBoard() {
     const resolvedTypeName = taskEditDraft.type.trim() || getTaskType(task)
     const resolvedEstimatedRaw = taskEditDraft.estimatedDuration.trim() || String(getEstimatedDuration(task) ?? '')
     const resolvedEstimatedDuration = parseHours(resolvedEstimatedRaw)
+
+    const resolvedRealRaw = (taskEditDraft.realDuration ? taskEditDraft.realDuration.trim() : '') || (getRealDuration(task) != null ? String(getRealDuration(task)) : '')
+    const resolvedRealDuration = parseHours(resolvedRealRaw)
 
     const resolvedSprintRaw = (taskEditDraft.sprint ? taskEditDraft.sprint.trim() : '') || (getSprintNumber(task) != null ? String(getSprintNumber(task)) : '')
     const resolvedSprintNumber = resolvedSprintRaw ? Number(String(resolvedSprintRaw).trim()) : null
@@ -417,6 +424,7 @@ export default function DeveloperTasksBoard() {
       const requestPayload = {
         content: resolvedContent,
         estimatedDuration: resolvedEstimatedDuration,
+        realDuration: resolvedRealDuration != null ? resolvedRealDuration : null,
         userId: Number(developerId),
         typeId: resolvedTypeId,
         sprintNumber: resolvedSprintNumber,
@@ -747,6 +755,18 @@ export default function DeveloperTasksBoard() {
                                     type="text"
                                     className="form-input"
                                     value={taskEditDraft.estimatedDuration}
+                                    onChange={handleTaskEditFieldChange}
+                                  />
+                                </div>
+
+                                <div className="form-field">
+                                  <label htmlFor={`task-real-${rowId}`} className="form-label">Real hours</label>
+                                  <input
+                                    id={`task-real-${rowId}`}
+                                    name="realDuration"
+                                    type="text"
+                                    className="form-input"
+                                    value={taskEditDraft.realDuration}
                                     onChange={handleTaskEditFieldChange}
                                   />
                                 </div>
