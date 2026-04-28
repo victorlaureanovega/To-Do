@@ -202,7 +202,7 @@ public class TaskController {
         if (dto.getSprintNumber() != null) {
             task.set_Sprint(dto.getSprintNumber());
         }
-        f (dto.getRealDuration() != null) {
+        if (dto.getRealDuration() != null) {
             task.setRealDuration(dto.getRealDuration());
             task.setTotalHoursWorked(dto.getRealDuration().doubleValue());
         }
