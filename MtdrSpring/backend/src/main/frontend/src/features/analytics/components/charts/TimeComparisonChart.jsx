@@ -6,7 +6,7 @@
  * Uses real backend data from /api/tasks/hours/by-developer/{developerId}.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import SectionCard from '../../../../components/common/SectionCard'
@@ -39,11 +39,41 @@ const toStackedRow = (developerLabel, estimatedHours, realHours) => {
 	}
 }
 
+const getSprintNumber = (value) => {
+	if (value == null || value === '') {
+		return null
+	}
+
+	const sprintNumber = Number(value)
+	return Number.isFinite(sprintNumber) ? sprintNumber : null
+}
+
+const sumHoursRows = (rows, sprintFilter) => {
+	if (!Array.isArray(rows) || rows.length === 0) {
+		return { estimatedHours: 0, realHours: 0 }
+	}
+
+	if (sprintFilter == null) {
+		return rows.reduce((accumulator, row) => ({
+			estimatedHours: accumulator.estimatedHours + Number(row?.totalEstimatedHours ?? 0),
+			realHours: accumulator.realHours + Number(row?.totalWorkedHours ?? 0),
+		}), { estimatedHours: 0, realHours: 0 })
+	}
+
+	const match = rows.find((row) => getSprintNumber(row?.sprint) === sprintFilter)
+	return {
+		estimatedHours: Number(match?.totalEstimatedHours ?? 0),
+		realHours: Number(match?.totalWorkedHours ?? 0),
+	}
+}
+
 export default function TimeComparisonChart({ data: _data, isLoading, error, renderTooltip, selectedDeveloperId = 'all' }) {
 	const { teamId } = useData()
 	const [backendData, setBackendData] = useState([])
 	const [backendLoading, setBackendLoading] = useState(false)
 	const [backendError, setBackendError] = useState(null)
+	const [selectedSprint, setSelectedSprint] = useState('all')
+	const [availableSprints, setAvailableSprints] = useState([])
 
 	useEffect(() => {
 		let isCancelled = false
@@ -58,6 +88,7 @@ export default function TimeComparisonChart({ data: _data, isLoading, error, ren
 					selectedDeveloperId === 'all'
 						? developers
 						: developers.filter((developer) => String(developer?.userId ?? '') === String(selectedDeveloperId))
+				const sprintFilter = selectedSprint === 'all' ? null : Number(selectedSprint)
 
 				const settled = await Promise.allSettled(
 					scopedDevelopers.map(async (developer) => {
@@ -76,19 +107,30 @@ export default function TimeComparisonChart({ data: _data, isLoading, error, ren
 						}
 
 						const hours = await response.json()
-						const estimatedHours = Number(hours?.totalEstimatedHours ?? 0)
-						const realHours = Number(hours?.totalWorkedHours ?? 0)
+						const hoursRows = Array.isArray(hours) ? hours : []
+						const sprintNumbers = hoursRows
+							.map((row) => getSprintNumber(row?.sprint))
+							.filter((value) => value != null)
 
-						return toStackedRow(getDisplayName(developer), estimatedHours, realHours)
+						const { estimatedHours, realHours } = sumHoursRows(hoursRows, sprintFilter)
+
+						return { row: toStackedRow(getDisplayName(developer), estimatedHours, realHours), sprintNumbers }
 					}),
 				)
 
 				const rows = settled
 					.filter((result) => result.status === 'fulfilled')
-					.map((result) => result.value)
+					.map((result) => result.value.row)
+
+				const sprintOptions = Array.from(new Set(
+					settled
+						.filter((result) => result.status === 'fulfilled')
+						.flatMap((result) => result.value.sprintNumbers),
+				)).sort((a, b) => a - b)
 
 				if (!isCancelled) {
 					setBackendData(rows)
+					setAvailableSprints(sprintOptions)
 				}
 			} catch (fetchError) {
 				if (!isCancelled) {
@@ -106,11 +148,16 @@ export default function TimeComparisonChart({ data: _data, isLoading, error, ren
 		return () => {
 			isCancelled = true
 		}
-	}, [teamId, selectedDeveloperId])
+	}, [teamId, selectedDeveloperId, selectedSprint])
 
 	const effectiveError = backendError ?? error
 	const effectiveLoading = backendLoading || isLoading
 	const chartData = backendData
+	const sprintSelectOptions = useMemo(() => availableSprints.slice().sort((a, b) => a - b), [availableSprints])
+
+	const handleSprintChange = (event) => {
+		setSelectedSprint(event.target.value)
+	}
 
 	if (effectiveError) {
 		return (
@@ -130,6 +177,22 @@ export default function TimeComparisonChart({ data: _data, isLoading, error, ren
 
 	return (
 		<SectionCard title="Estimated vs Real Time by Developer">
+			<div className="chart-filter-bar">
+				<div className="form-field chart-filter-bar__field">
+					<label className="form-label" htmlFor="time-comparison-sprint-filter">Sprint</label>
+					<select
+						id="time-comparison-sprint-filter"
+						className="form-select chart-filter-bar__select"
+						value={selectedSprint}
+						onChange={handleSprintChange}
+					>
+						<option value="all">All sprints</option>
+						{sprintSelectOptions.map((sprintNumber) => (
+							<option key={sprintNumber} value={String(sprintNumber)}>{`Sprint ${sprintNumber}`}</option>
+						))}
+					</select>
+				</div>
+			</div>
 			<div className="chart-box">
 				<ResponsiveContainer width="100%" height={290}>
 					<BarChart data={chartData}>

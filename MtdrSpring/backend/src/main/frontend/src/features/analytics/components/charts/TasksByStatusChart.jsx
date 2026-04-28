@@ -5,7 +5,7 @@
  * Uses real backend data from /api/users and /api/tasks/by-developer/{userId}.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import React from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import SectionCard from '../../../../components/common/SectionCard'
@@ -47,11 +47,23 @@ const createEmptyStatusRow = (developer) => ({
 	completed: 0,
 })
 
+const getSprintNumber = (task) => {
+	const sprintValue = task?._Sprint
+	if (sprintValue == null || sprintValue === '') {
+		return null
+	}
+
+	const sprintNumber = Number(sprintValue)
+	return Number.isFinite(sprintNumber) ? sprintNumber : null
+}
+
 export default function TasksByStatusChart({ data: _data, isLoading, error, renderTooltip, selectedDeveloperId = 'all' }) {
 	const { teamId } = useData()
 	const [backendData, setBackendData] = useState([])
 	const [backendLoading, setBackendLoading] = useState(false)
 	const [backendError, setBackendError] = useState(null)
+	const [selectedSprint, setSelectedSprint] = useState('all')
+	const [availableSprints, setAvailableSprints] = useState([])
 
 	useEffect(() => {
 		let isCancelled = false
@@ -66,6 +78,7 @@ export default function TasksByStatusChart({ data: _data, isLoading, error, rend
 					selectedDeveloperId === 'all'
 						? developers
 						: developers.filter((developer) => String(developer?.userId ?? '') === String(selectedDeveloperId))
+				const sprintFilter = selectedSprint === 'all' ? null : Number(selectedSprint)
 
 				const settled = await Promise.allSettled(
 					scopedDevelopers.map(async (developer) => {
@@ -85,24 +98,41 @@ export default function TasksByStatusChart({ data: _data, isLoading, error, rend
 
 						const tasks = await response.json()
 						const statusRow = createEmptyStatusRow(getDisplayName(developer))
+						const sprintNumbers = new Set()
 
 						if (Array.isArray(tasks)) {
 							for (const task of tasks) {
+								const sprintNumber = getSprintNumber(task)
+								if (sprintNumber != null) {
+									sprintNumbers.add(sprintNumber)
+								}
+
+								if (sprintFilter != null && sprintNumber !== sprintFilter) {
+									continue
+								}
+
 								const bucket = normalizeStatus(task?.taskStatus)
 								statusRow[bucket] += 1
 							}
 						}
 
-						return statusRow
+						return { statusRow, sprintNumbers: Array.from(sprintNumbers) }
 					}),
 				)
 
 				const rows = settled
 					.filter((result) => result.status === 'fulfilled')
-					.map((result) => result.value)
+					.map((result) => result.value.statusRow)
+
+				const sprintOptions = Array.from(new Set(
+					settled
+						.filter((result) => result.status === 'fulfilled')
+						.flatMap((result) => result.value.sprintNumbers),
+				)).sort((a, b) => a - b)
 
 				if (!isCancelled) {
 					setBackendData(rows)
+					setAvailableSprints(sprintOptions)
 				}
 			} catch (fetchError) {
 				if (!isCancelled) {
@@ -120,11 +150,16 @@ export default function TasksByStatusChart({ data: _data, isLoading, error, rend
 		return () => {
 			isCancelled = true
 		}
-	}, [teamId, selectedDeveloperId])
+	}, [teamId, selectedDeveloperId, selectedSprint])
 
 	const effectiveError = backendError ?? error
 	const effectiveLoading = backendLoading || isLoading
 	const chartData = backendData
+	const sprintSelectOptions = useMemo(() => availableSprints.slice().sort((a, b) => a - b), [availableSprints])
+
+	const handleSprintChange = (event) => {
+		setSelectedSprint(event.target.value)
+	}
 
 	if (effectiveError) {
 		return (
@@ -144,6 +179,22 @@ export default function TasksByStatusChart({ data: _data, isLoading, error, rend
 
 	return (
 		<SectionCard title="Tasks by Status by Developer">
+			<div className="chart-filter-bar">
+				<div className="form-field chart-filter-bar__field">
+					<label className="form-label" htmlFor="tasks-status-sprint-filter">Sprint</label>
+					<select
+						id="tasks-status-sprint-filter"
+						className="form-select chart-filter-bar__select"
+						value={selectedSprint}
+						onChange={handleSprintChange}
+					>
+						<option value="all">All sprints</option>
+						{sprintSelectOptions.map((sprintNumber) => (
+							<option key={sprintNumber} value={String(sprintNumber)}>{`Sprint ${sprintNumber}`}</option>
+						))}
+					</select>
+				</div>
+			</div>
 			<div className="chart-box">
 				<ResponsiveContainer width="100%" height={290}>
 					<BarChart data={chartData}>
