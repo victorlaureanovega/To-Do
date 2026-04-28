@@ -20,16 +20,6 @@ if ! state_done PROVISIONING; then
   if state_done K8S_PROVISIONING; then
     rm -f containerengine.tf core.tf
   fi
-## appending the output of cat into the file terraform rc
-  cat >~/.terraformrc <<!
-provider_installation {
-  filesystem_mirror {
-    path    = "/usr/share/terraform/plugins"
-  }
-  direct {
-  }
-}
-!
 
   if ! terraform init; then
     echo 'ERROR: terraform init failed!'
