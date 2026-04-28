@@ -9,6 +9,12 @@ import { useAuth } from '../../../hooks/useAuth'
 import { getCanonicalTaskStatus, toBackendTaskStatus, toEnglishTaskStatus } from '../../../utils/taskStatus'
 
 const DEFAULT_TASK_TYPES = ['Feature', 'Bug', 'Research', 'Documentation']
+const TASK_TYPE_MAPPING = {
+  feature: { id: 1, name: 'Feature' },
+  bug: { id: 2, name: 'Bug' },
+  research: { id: 3, name: 'Reasearch' },
+  documentation: { id: 4, name: 'Documentation' },
+}
 const STATUS_OPTIONS = [
   { value: 'Pendiente', label: 'Pending' },
   { value: 'En curso', label: 'Ongoing' },
@@ -164,8 +170,8 @@ const normalizeTaskTypeName = (value) => String(value ?? '').trim().toLowerCase(
 export default function DeveloperTasksBoard() {
   const { user } = useAuth()
   const [developerGroups, setDeveloperGroups] = useState([])
-  const [taskTypesByName, setTaskTypesByName] = useState({})
-  const [taskTypeOptions, setTaskTypeOptions] = useState(DEFAULT_TASK_TYPES)
+  const [taskTypesByName] = useState(TASK_TYPE_MAPPING)
+  const [taskTypeOptions] = useState(Object.values(TASK_TYPE_MAPPING).map((t) => t.name))
   const [editingTaskId, setEditingTaskId] = useState(null)
   const [taskEditDraft, setTaskEditDraft] = useState({
     task: '',
@@ -189,42 +195,6 @@ export default function DeveloperTasksBoard() {
   const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
   const developerId = String(user?.userId ?? user?.id ?? '').trim()
   const developerName = user?.name ?? user?.username ?? (developerId ? `Developer ${developerId}` : 'Developer')
-
-  const loadTaskTypeCatalog = useCallback(async () => {
-    const allTasksEndpoint = apiBaseUrl ? `${apiBaseUrl}/api/tasks` : '/api/tasks'
-    const response = await fetch(allTasksEndpoint, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Backend responded ${response.status} ${response.statusText}`)
-    }
-
-    const payload = await response.json()
-    const tasks = Array.isArray(payload) ? payload : []
-
-    const mappedByName = {}
-    for (const task of tasks) {
-      const typeName = pickFirstValue(task?.type?.name, task?.type?.typeName, task?.typeName, task?.taskType)
-      const typeId = pickFirstValue(task?.type?.typeId, task?.type?.id, task?.typeId)
-
-      if (!hasValue(typeName) || !hasValue(typeId)) {
-        continue
-      }
-
-      mappedByName[normalizeTaskTypeName(typeName)] = {
-        id: Number(typeId),
-        name: String(typeName),
-      }
-    }
-
-    setTaskTypesByName(mappedByName)
-    setTaskTypeOptions((previous) => {
-      const dynamicNames = Object.values(mappedByName).map((entry) => entry.name)
-      return Array.from(new Set([...DEFAULT_TASK_TYPES, ...dynamicNames, ...previous]))
-    })
-  }, [apiBaseUrl])
 
   const loadDeveloperTaskGroups = useCallback(async () => {
     if (!developerId) {
@@ -274,7 +244,7 @@ export default function DeveloperTasksBoard() {
 
     const loadInitialData = async () => {
       try {
-        await Promise.all([loadTaskTypeCatalog(), loadDeveloperTaskGroups()])
+        await loadDeveloperTaskGroups()
       } catch (loadError) {
         if (!isCancelled) {
           setError(loadError)
@@ -289,7 +259,7 @@ export default function DeveloperTasksBoard() {
     return () => {
       isCancelled = true
     }
-  }, [loadDeveloperTaskGroups, loadTaskTypeCatalog])
+  }, [loadDeveloperTaskGroups])
 
   const totalTasks = useMemo(
     () => developerGroups.reduce((sum, group) => sum + group.tasks.length, 0),
