@@ -27,9 +27,11 @@ const mapBackendTaskToUiTask = (task) => {
 		title: task?.content ? task.content.slice(0, 80) : `Task ${task?.taskId ?? ''}`,
 		description: task?.content ?? '',
 		status: toEnglishTaskStatus(task?.taskStatus ?? task?.status ?? task?.taskState),
+		rawStatus: task?.taskStatus ?? task?.status ?? task?.taskState ?? null,
 		estimatedDuration: task?.estimatedDuration != null ? String(task.estimatedDuration) : '',
 		createdAt: task?.creationDate ? String(task.creationDate).split('T')[0] : '',
 		assignee: fullName || task?.user?.username || null,
+		assigneeId: task?.user?.userId != null ? String(task.user.userId) : null,
 	}
 }
 
@@ -392,21 +394,74 @@ export function DataProvider({ children }) {
 	// ==================== Team Tasks Operations ====================
 
 	const fetchTeamTasks = useCallback(async (filters = {}) => {
+		const managerUserId = String(user?.userId ?? user?.id ?? '').trim()
+		const role = String(user?.role ?? '').toUpperCase()
+
+		if (!managerUserId || role !== 'MANAGER') {
+			setTeamTasks([])
+			setTeamTasksError(null)
+			return { success: true, data: [] }
+		}
+
 		setTeamTasksLoading(true)
 		setTeamTasksError(null)
 
-		const response = await taskService.fetchTeamTasks({ ...filters, teamId })
+		try {
+			const endpoint = apiBaseUrl
+				? `${apiBaseUrl}/api/tasks/team/by-manager/${managerUserId}`
+				: `/api/tasks/team/by-manager/${managerUserId}`
 
-		if (response.success) {
-			setTeamTasks(response.data)
+			const params = new URLSearchParams()
+			if (filters?.developerId && filters.developerId !== 'All') {
+				params.set('developerId', String(filters.developerId))
+			}
+			if (filters?.status && filters.status !== 'All') {
+				const backendStatus = toBackendTaskStatus(filters.status)
+				if (backendStatus) {
+					params.set('status', backendStatus)
+				}
+			}
+			if (filters?.startDate) {
+				params.set('startDate', String(filters.startDate))
+			}
+			if (filters?.endDate) {
+				params.set('endDate', String(filters.endDate))
+			}
+
+			const url = params.toString() ? `${endpoint}?${params.toString()}` : endpoint
+			const response = await fetch(url, {
+				method: 'GET',
+				headers: { Accept: 'application/json' },
+			})
+
+			if (!response.ok) {
+				const error = {
+					message: `Backend responded ${response.status} ${response.statusText}`,
+					code: 'BACKEND_HTTP_ERROR',
+				}
+
+				setTeamTasksError(error)
+				return { success: false, data: null, error }
+			}
+
+			const rawTasks = await response.json()
+			const mappedTasks = Array.isArray(rawTasks) ? rawTasks.map(mapBackendTaskToUiTask) : []
+
+			setTeamTasks(mappedTasks)
 			setTeamTasksError(null)
-		} else {
-			setTeamTasksError(response.error)
-		}
+			return { success: true, data: mappedTasks }
+		} catch (error) {
+			const normalizedError = {
+				message: error instanceof Error ? error.message : 'Failed to load team tasks',
+				code: 'BACKEND_CALL_FAILED',
+			}
 
-		setTeamTasksLoading(false)
-		return response
-	}, [teamId])
+			setTeamTasksError(normalizedError)
+			return { success: false, data: null, error: normalizedError }
+		} finally {
+			setTeamTasksLoading(false)
+		}
+	}, [user])
 
 	// ==================== Analytics Operations ====================
 
@@ -435,10 +490,13 @@ export function DataProvider({ children }) {
 		fetchDeveloperAverageHoursFromBackend()
 		fetchTeamAverageFinishedTasksFromBackend()
 		fetchTeamAverageWorkedHoursFromBackend()
-		fetchTeamTasks()
+		if (String(user?.role ?? '').toUpperCase() === 'MANAGER') {
+			fetchTeamTasks()
+		}
 		fetchAnalytics()
 	}, [
 		teamId,
+		user,
 		fetchDeveloperTasksFromBackend,
 		fetchDeveloperAverageHoursFromBackend,
 		fetchTeamAverageFinishedTasksFromBackend,

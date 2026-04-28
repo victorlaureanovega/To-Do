@@ -9,10 +9,13 @@ import com.springboot.MyTodoList.dto.TaskRequest;
 import com.springboot.MyTodoList.repository.SprintRepository;
 import com.springboot.MyTodoList.repository.TaskRepository;
 import com.springboot.MyTodoList.repository.TaskTypeRepository;
+import com.springboot.MyTodoList.repository.TeamRepository;
 import com.springboot.MyTodoList.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -26,6 +29,8 @@ public class TaskController {
     private TaskTypeRepository taskTypeRepository;
     @Autowired
     private SprintRepository sprintRepository;
+    @Autowired
+    private TeamRepository teamRepository;
 
     // Obtener todas las tareas en la base de datos
     @GetMapping
@@ -46,6 +51,48 @@ public class TaskController {
         user.setUserId(userId);
         
         return taskRepository.findByUser(user);
+    }
+
+    // Obtener tareas de equipo para un manager (solo lectura), con filtros opcionales.
+    @GetMapping("/team/by-manager/{managerUserId}")
+    public ResponseEntity<List<Task>> getTeamTasksByManager(
+        @PathVariable Long managerUserId,
+        @RequestParam(required = false) Long developerId,
+        @RequestParam(required = false) String status,
+        @RequestParam(required = false) LocalDate startDate,
+        @RequestParam(required = false) LocalDate endDate
+    ) {
+        User manager = userRepository.findById(managerUserId)
+            .orElseThrow(() -> new RuntimeException("Manager no encontrado"));
+
+        if (!"MANAGER".equalsIgnoreCase(manager.getRole())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        Long teamId = teamRepository.findByManagerId(managerUserId)
+            .map(team -> team.getTeamId())
+            .orElseGet(() -> manager.getTeam() != null ? manager.getTeam().getTeamId() : null);
+
+        if (teamId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
+        LocalDateTime endDateTime = endDate != null ? endDate.plusDays(1).atStartOfDay() : null;
+
+        List<Task> tasks = taskRepository.findActiveTeamTasksByManagerFilters(
+            teamId,
+            developerId,
+            status,
+            startDateTime,
+            endDateTime
+        );
+
+        return ResponseEntity.ok(tasks);
     }
 
     // Obtener el promedio de horas trabajadas por cada equipo

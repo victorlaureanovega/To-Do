@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -27,6 +28,25 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     // Buscar tareas activas de un usuario
     List<Task> findByUserAndIsActive(User user, Integer isActive);
+
+   // Obtener tareas activas del equipo de un manager, con filtros opcionales.
+   @Query("SELECT t FROM Task t " +
+      "JOIN t.user u " +
+      "WHERE u.team.teamId = :teamId " +
+      "AND u.role = 'DEVELOPER' " +
+      "AND t.isActive = 1 " +
+      "AND (:developerId IS NULL OR u.userId = :developerId) " +
+      "AND (:status IS NULL OR t.taskStatus = :status) " +
+      "AND (:startDateTime IS NULL OR t.creationDate >= :startDateTime) " +
+      "AND (:endDateTime IS NULL OR t.creationDate < :endDateTime) " +
+      "ORDER BY u.userId ASC, t.creationDate DESC")
+   List<Task> findActiveTeamTasksByManagerFilters(
+      @Param("teamId") Long teamId,
+      @Param("developerId") Long developerId,
+      @Param("status") String status,
+      @Param("startDateTime") LocalDateTime startDateTime,
+      @Param("endDateTime") LocalDateTime endDateTime
+   );
 
     // Promedio de horas trabajadas por cada miembro de un equipo
     // Query para considerar sólo a los que tienen tareas registradas

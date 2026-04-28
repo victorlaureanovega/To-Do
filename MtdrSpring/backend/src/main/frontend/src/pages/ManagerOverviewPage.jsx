@@ -7,31 +7,88 @@ import FilterBar from '../components/common/FilterBar'
 import EmptyState from '../components/common/EmptyState'
 import TaskTable from '../components/tasks/TaskTable'
 import { useData } from '../hooks/useData'
-import { useFilter } from '../hooks/useFilter'
 import { STATUS_OPTIONS } from '../data'
+import { getCanonicalTaskStatus } from '../utils/taskStatus'
 
 
 export default function ManagerOverviewPage() {
   const [developerFilter, setDeveloperFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
+  const [dateRange, setDateRange] = useState({ start: '', end: '' })
 
-  const { teamTasks, getTeamTasks } = useData()
+  const { teamTasks, teamTasksError, getTeamTasks } = useData()
 
   useEffect(() => {
-    getTeamTasks()
-  }, [getTeamTasks])
+    getTeamTasks({
+      developerId: developerFilter,
+      status: statusFilter,
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+    })
+  }, [getTeamTasks, developerFilter, statusFilter, dateRange])
 
-  const developerOptions = [
-    { value: 'All', label: 'All developers' },
-    ...new Set(teamTasks.map(t => t.assignee)).size > 0
-      ? Array.from(new Set(teamTasks.map(t => t.assignee))).map(dev => ({ value: dev, label: dev }))
-      : []
-  ]
+  const developerOptions = useMemo(() => {
+    const uniqueDevelopers = new Map()
 
-  const byDeveloper = useFilter(teamTasks, 'assignee', developerFilter)
-  const filtered = useFilter(byDeveloper, 'status', statusFilter)
+    teamTasks.forEach((task) => {
+      const assigneeName = String(task?.assignee ?? '').trim() || 'Unassigned'
+      const assigneeId = String(task?.assigneeId ?? assigneeName).trim()
+
+      if (assigneeId && !uniqueDevelopers.has(assigneeId)) {
+        uniqueDevelopers.set(assigneeId, assigneeName)
+      }
+    })
+
+    return [
+      { value: 'All', label: 'All developers' },
+      ...Array.from(uniqueDevelopers.entries()).map(([value, label]) => ({ value, label })),
+    ]
+  }, [teamTasks])
+
+  const filteredTeamTasks = useMemo(() => {
+    return teamTasks.filter((task) => {
+      const taskDeveloperValue = String(task?.assigneeId ?? task?.assignee ?? '').trim()
+      if (developerFilter !== 'All' && taskDeveloperValue !== String(developerFilter)) {
+        return false
+      }
+
+      if (
+        statusFilter !== 'All'
+        && getCanonicalTaskStatus(task?.status) !== getCanonicalTaskStatus(statusFilter)
+      ) {
+        return false
+      }
+
+      const createdAt = String(task?.createdAt ?? '').trim()
+      if (!createdAt) {
+        return !dateRange.start && !dateRange.end
+      }
+
+      const createdDate = new Date(`${createdAt}T00:00:00`)
+      if (Number.isNaN(createdDate.getTime())) {
+        return false
+      }
+
+      if (dateRange.start) {
+        const startDate = new Date(`${dateRange.start}T00:00:00`)
+        if (!Number.isNaN(startDate.getTime()) && createdDate < startDate) {
+          return false
+        }
+      }
+
+      if (dateRange.end) {
+        const endDate = new Date(`${dateRange.end}T23:59:59`)
+        if (!Number.isNaN(endDate.getTime()) && createdDate > endDate) {
+          return false
+        }
+      }
+
+      return true
+    })
+  }, [teamTasks, developerFilter, statusFilter, dateRange])
+
   const groupedByDeveloper = useMemo(() => {
-    return filtered.reduce((accumulator, task) => {
+    return filteredTeamTasks.reduce((accumulator, task) => {
       const assignee = task?.assignee || 'Unassigned'
       if (!accumulator[assignee]) {
         accumulator[assignee] = []
@@ -40,7 +97,7 @@ export default function ManagerOverviewPage() {
       accumulator[assignee].push(task)
       return accumulator
     }, {})
-  }, [filtered])
+  }, [filteredTeamTasks])
 
   const sortedDeveloperNames = useMemo(
     () => Object.keys(groupedByDeveloper).sort((a, b) => a.localeCompare(b)),
@@ -62,11 +119,19 @@ export default function ManagerOverviewPage() {
               { id: 'dev', label: 'Developer', options: developerOptions, value: developerFilter, onChange: setDeveloperFilter },
               { id: 'status', label: 'Status', options: STATUS_OPTIONS, value: statusFilter, onChange: setStatusFilter },
             ]}
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
           />
         }
         noPad
       >
-        {filtered.length === 0 ? (
+        {teamTasksError ? (
+          <EmptyState
+            icon={Users}
+            title="Unable to load team tasks"
+            message={teamTasksError.message ?? 'The manager team endpoint returned an error.'}
+          />
+        ) : filteredTeamTasks.length === 0 ? (
           <EmptyState
             icon={Users}
             title="No tasks match your filters"
