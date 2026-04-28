@@ -8,6 +8,7 @@ public class TaskRequest {
     private Long userId;
     private Long typeId;
     private Long sprintId;
+    private Float realDuration; 
 
     @JsonProperty("_Sprint")
     private Integer sprintNumber;
@@ -30,4 +31,6 @@ public class TaskRequest {
 
     public Integer getSprintNumber() { return sprintNumber; }
     public void setSprintNumber(Integer sprintNumber) { this.sprintNumber = sprintNumber; }
+    public Float getRealDuration() { return realDuration; }
+    public void setRealDuration(Float realDuration) { this.realDuration = realDuration; }
 }
